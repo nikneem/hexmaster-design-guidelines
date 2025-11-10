@@ -12,6 +12,10 @@ env:
   DOTNET_VERSION: '9.0.x'
   COVERAGE_THRESHOLD: 80
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   build-test-publish:
     name: Build, Test & Publish
