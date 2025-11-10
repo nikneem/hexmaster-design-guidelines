@@ -49,6 +49,7 @@ src/
 ## ADRs
 - 0001: Adopt .NET 9 as Target Framework (Accepted)
  - 0002: Modular Monolith Project Structure (Proposed)
+ - 0003: .NET Aspire Recommendation for ASP.NET Services (Proposed)
 
 ## Notes
 - All code and examples target `.NET 9`.

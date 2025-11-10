@@ -15,6 +15,7 @@ public static class DocumentRegistry
         // Registered ADRs
         new AdrDocument("0001", "Adopt .NET 9 as Target Framework", "docs/adrs/0001-adopt-dotnet-9.md", string.Empty, "Accepted", new DateTime(2025, 11, 10)),
         new AdrDocument("0002", "Modular Monolith Project Structure", "docs/adrs/0002-modular-monolith-structure.md", string.Empty, "Proposed", new DateTime(2025, 11, 10)),
+        new AdrDocument("0003", ".NET Aspire Recommendation for ASP.NET Services", "docs/adrs/0003-recommend-aspire-for-aspnet-projects.md", string.Empty, "Proposed", new DateTime(2025, 11, 10)),
     };
 
     public static IReadOnlyList<GuidelineDocument> All => _documents;
