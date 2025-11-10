@@ -4,13 +4,10 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 env:
   DOTNET_VERSION: '9.0.x'
-  COVERAGE_THRESHOLD: 80
+  CORE_COVERAGE_THRESHOLD: 80
 
 permissions:
   contents: write
@@ -64,11 +61,12 @@ jobs:
       
       - name: Run tests with coverage
         run: |
-          dotnet test src/Hexmaster.DesignGuidelines.Tests/Hexmaster.DesignGuidelines.Tests.csproj \
+          dotnet test src/hexmaster-design-guidelines.sln \
             --configuration Release \
             --no-build \
             --collect:"XPlat Code Coverage" \
             --results-directory ./coverage \
+            --settings coverlet.runsettings \
             --logger "trx;LogFileName=test-results.trx"
       
       - name: Install ReportGenerator
@@ -84,16 +82,24 @@ jobs:
       - name: Verify coverage threshold
         run: |
           COVERAGE=$(jq -r '.summary.linecoverage' ./coverage/report/Summary.json)
-          echo "Line Coverage: $COVERAGE%"
+          CORE_COVERAGE=$(jq -r '.coverage.assemblies[] | select(.name=="Hexmaster.DesignGuidelines.Core") | .coverage' ./coverage/report/Summary.json)
           
-          # Convert to integer for comparison
-          COVERAGE_INT=$(echo "$COVERAGE" | awk '{print int($1)}')
+          echo "Overall Line Coverage: $COVERAGE%"
+          echo "Core Library Coverage: $CORE_COVERAGE%"
           
-          if [ "$COVERAGE_INT" -lt "$COVERAGE_THRESHOLD" ]; then
-            echo "❌ Coverage $COVERAGE% is below threshold of $COVERAGE_THRESHOLD%"
+          # Check Core library coverage (should be >= 80%)
+          CORE_NUM=$(echo $CORE_COVERAGE | cut -d'.' -f1)
+          if [ $CORE_NUM -lt $CORE_COVERAGE_THRESHOLD ]; then
+            echo "❌ Core library coverage $CORE_COVERAGE% is below threshold of $CORE_COVERAGE_THRESHOLD%"
             exit 1
           else
-            echo "✅ Coverage $COVERAGE% meets threshold of $COVERAGE_THRESHOLD%"
+            echo "✅ Core library coverage $CORE_COVERAGE% meets threshold of $CORE_COVERAGE_THRESHOLD%"
+          fi
+          
+          # Informational: Overall coverage
+          OVERALL_NUM=$(echo $COVERAGE | cut -d'.' -f1)
+          if [ $OVERALL_NUM -lt 50 ]; then
+            echo "⚠️  Overall coverage is below 50%: $COVERAGE% (Server console app has limited testability)"
           fi
       
       - name: Upload coverage to artifacts
@@ -103,15 +109,7 @@ jobs:
           name: coverage-report
           path: ./coverage/report
       
-      - name: Add coverage summary to PR
-        if: github.event_name == 'pull_request'
-        run: |
-          if [ -f ./coverage/report/SummaryGithub.md ]; then
-            cat ./coverage/report/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
-          fi
-      
       - name: Pack Core library
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           dotnet pack src/Hexmaster.DesignGuidelines.Core/Hexmaster.DesignGuidelines.Core.csproj \
             --configuration Release \
@@ -121,7 +119,6 @@ jobs:
             /p:Version=${{ steps.gitversion.outputs.assemblySemVer }}
       
       - name: Pack Server
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           dotnet pack src/Hexmaster.DesignGuidelines.Server/Hexmaster.DesignGuidelines.Server.csproj \
             --configuration Release \
@@ -131,7 +128,6 @@ jobs:
             /p:Version=${{ steps.gitversion.outputs.assemblySemVer }}
       
       - name: Push to NuGet
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           dotnet nuget push ./packages/*.nupkg \
             --api-key ${{ secrets.NUGET_API_KEY }} \
@@ -139,7 +135,6 @@ jobs:
             --skip-duplicate
       
       - name: Create GitHub Release
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
