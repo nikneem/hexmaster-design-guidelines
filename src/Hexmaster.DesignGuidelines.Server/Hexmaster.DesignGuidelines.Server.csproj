@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -13,17 +13,17 @@
     <ToolCommandName>hexmaster-design-guidelines-server</ToolCommandName>
     
     <!-- Package Metadata -->
-    <PackageId>Hexmaster.DesignGuidelines.Server</PackageId>
-    <Title>Hexmaster Design Guidelines - MCP Server</Title>
-    <Description>MCP Server host exposing design guideline documents via list &amp; fetch endpoints. Provides a minimal API for querying ADRs, recommendations, and structure documents. Can be installed as a .NET tool for use with GitHub Copilot.</Description>
-    <Authors>Edward Wilde</Authors>
-    <Company>Hexmaster</Company>
-    <Product>Hexmaster Design Guidelines</Product>
-    <Copyright>Copyright © 2025 Edward Wilde</Copyright>
+    <PackageId>HexMaster.DesignGuidelines.Server</PackageId>
+    <Title>HexMaster Design Guidelines - MCP Server</Title>
+    <Description>MCP Server implementing Model Context Protocol over JSON-RPC stdio. Exposes design guideline documents (ADRs, recommendations, structures) as tools for AI assistants like GitHub Copilot. Install as a .NET tool for seamless integration.</Description>
+    <Authors>Eduard Keilholz</Authors>
+    <Company>HexMaster</Company>
+    <Product>HexMaster Design Guidelines</Product>
+    <Copyright>Copyright © 2025 Eduard Keilholz</Copyright>
     <PackageProjectUrl>https://github.com/nikneem/hexmaster-design-guidelines</PackageProjectUrl>
     <RepositoryUrl>https://github.com/nikneem/hexmaster-design-guidelines</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>mcp-server;design-guidelines;architecture;adr;api;dotnet;csharp;dotnet-tool;github-copilot</PackageTags>
+    <PackageTags>mcp-server;mcp;model-context-protocol;json-rpc;design-guidelines;architecture;adr;dotnet-tool;github-copilot;ai-assistant</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>

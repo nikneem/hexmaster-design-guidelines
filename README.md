@@ -4,22 +4,35 @@ Design, architecture, style and structure guidelines for modern .NET (C#) projec
 
 ## MCP Server (C#, .NET 9)
 
-A minimal HTTP server exposes endpoints to list and fetch registered guideline documents.
+An MCP (Model Context Protocol) server implementing JSON-RPC 2.0 over stdio. Exposes design guideline documents as tools that AI assistants can call.
 
 ### Requirements
 - .NET 9 SDK
 
-### Run Standalone
+### MCP Protocol
+
+The server implements the Model Context Protocol, communicating via JSON-RPC messages over standard input/output. It exposes two tools:
+
+1. **list_documents** - Lists all available design guideline documents (ADRs, recommendations, structures)
+2. **get_document** - Retrieves the content of a specific document by its ID
+
+Documents are served from the local repository first, with automatic fallback to GitHub raw content if not found locally.
+
+### Run Standalone (for testing)
+
 From the repository root:
 
 ```powershell
 dotnet run --project .\src\Hexmaster.DesignGuidelines.Server\Hexmaster.DesignGuidelines.Server.csproj
 ```
 
-Endpoints:
-- `GET /health` – health probe
-- `GET /docs` – list registered docs (id, title, category, relativePath)
-- `GET /docs/{id}` – fetch markdown content (local first, fallback to GitHub raw)
+The server reads JSON-RPC requests from stdin and writes responses to stdout. Example request:
+
+```json
+{"jsonrpc":"2.0","id":1,"method":"initialize"}
+{"jsonrpc":"2.0","id":2,"method":"tools/list"}
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list_documents","arguments":{}}}
+```
 
 You can override the repository root with `HEXMASTER_REPO_ROOT` environment variable if needed.
 
@@ -166,24 +179,43 @@ src/
 ## Structures
 - Minimal API Endpoint Organization (`docs/structures/minimal-api-endpoint-organization.md`)
 
-## CI/CD & Publishing
+## CI/CD Workflows
 
-### Automated Pipeline
-The repository uses **GitHub Actions** for continuous integration and deployment. The workflow (`.github/workflows/ci-cd.yml`) runs on every push to `main` and on pull requests.
+### Pull Request Validation
+**Workflow**: `.github/workflows/pr-validation.yml`
 
-**Pipeline stages:**
-1. **Build** – Compile all projects in Release configuration
-2. **Test** – Run xUnit tests with code coverage collection
-3. **Coverage Verification** – Enforce 80% line coverage threshold (build fails if not met)
-4. **Package** – Create NuGet packages for Core and Server projects (main branch only)
-5. **Publish** – Push packages to NuGet.org (main branch only)
-6. **Release** – Create GitHub release with version tag (main branch only)
+Triggers on pull requests to `main` or `develop` branches when files in `src/` or `tests/` change.
 
-### Semantic Versioning
-Versions are managed automatically using **GitVersion**:
-- **Main branch:** Patch increment (e.g., 1.0.0 → 1.0.1)
-- **Feature branches** (`feature/*`): Pre-release with `alpha` tag, minor increment (e.g., 1.1.0-alpha.1)
-- **Release branches** (`release/*`): Pre-release with `beta` tag (e.g., 1.2.0-beta.1)
+Steps:
+1. **Build** – Compiles the solution in Release configuration
+2. **Test** – Runs all unit tests
+3. **Coverage** – Collects code coverage using coverlet
+4. **Report** – Generates HTML and markdown coverage reports
+5. **Threshold Check** – Enforces 80% coverage on Core library
+6. **PR Comment** – Posts coverage summary to the pull request
+7. **Artifact** – Uploads full coverage report (retained for 30 days)
+
+Coverage Requirements:
+- **Core Library**: Must maintain ≥80% line coverage
+- **Server**: Console app with limited unit test coverage (informational only)
+
+### CI/CD Pipeline
+**Workflow**: `.github/workflows/ci-cd.yml`
+
+Triggers on push to `main` branch.
+
+Steps:
+1. **Versioning** – GitVersion generates semantic version
+2. **Build** – Compiles solution in Release configuration
+3. **Test** – Runs all unit tests with 80% coverage enforcement
+4. **Package** – Creates NuGet packages for Core and Server
+5. **Publish** – Pushes packages to NuGet.org
+6. **Release** – Creates GitHub release with version tag
+
+Semantic Versioning Strategy:
+- **Main branch**: 1.0.0, 1.0.1, 1.0.2... (patch increments)
+- **Feature branches** (`feature/*`): 1.1.0-alpha.1, 1.1.0-alpha.2... (minor with pre-release)
+- **Release branches** (`release/*`): 1.0.0-beta.1, 1.0.0-beta.2... (patch with pre-release)
 - **Hotfix branches** (`hotfix/*`): Patch increment
 
 Configuration: `GitVersion.yml` at repository root.
@@ -191,7 +223,7 @@ Configuration: `GitVersion.yml` at repository root.
 ### NuGet Packages
 Both projects are published to NuGet.org:
 - **Hexmaster.DesignGuidelines.Core** – Core domain models and document services
-- **Hexmaster.DesignGuidelines.Server** – MCP Server host with minimal API endpoints
+- **Hexmaster.DesignGuidelines.Server** – MCP Server .NET tool implementing JSON-RPC protocol
 
 Package features:
 - XML documentation included
@@ -219,5 +251,5 @@ dotnet-gitversion
 ## Notes
 - All code and examples target `.NET 9`.
 - The MCP Server prefers local files but can fall back to GitHub raw for missing content.
-- Code coverage reports are generated for every build and attached as artifacts
-- Pull requests include coverage summaries in comments
+- Coverage reports are generated for every build and attached as artifacts
+- Pull requests include coverage summaries in comments automatically
