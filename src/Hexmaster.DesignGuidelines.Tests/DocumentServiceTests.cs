@@ -19,7 +19,8 @@ public class DocumentServiceTests
     [Fact]
     public async Task GetDocumentAsync_ShouldReturnContent_ForExistingAdr()
     {
-        using var http = new HttpClient(new FakeHandler());
+        // Use real HttpClient to allow GitHub fallback in CI
+        using var http = new HttpClient();
         var svc = new DocumentService(http, GetRepoRoot());
         var (doc, content) = await svc.GetDocumentAsync("0001", CancellationToken.None);
         Assert.NotNull(doc);
