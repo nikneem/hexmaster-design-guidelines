@@ -159,7 +159,6 @@ src/
  - 0003: .NET Aspire Recommendation for ASP.NET Services (Proposed)
  - 0004: CQRS Recommendation for ASP.NET API (Proposed)
  - 0005: Minimal APIs Over Controller-Based APIs (Proposed)
- - 0006: GitHub Actions CI/CD with Semantic Versioning and NuGet Publishing (Accepted)
 
 ## Recommendations
 - Unit Testing with xUnit, Moq, Bogus (`docs/recommendations/unit-testing-xunit-moq-bogus.md`)
