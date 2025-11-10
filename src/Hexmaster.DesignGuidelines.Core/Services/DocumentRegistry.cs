@@ -18,12 +18,16 @@ public static class DocumentRegistry
         new AdrDocument("0003", ".NET Aspire Recommendation for ASP.NET Services", "docs/adrs/0003-recommend-aspire-for-aspnet-projects.md", string.Empty, "Proposed", new DateTime(2025, 11, 10)),
         new AdrDocument("0004", "CQRS Recommendation for ASP.NET API", "docs/adrs/0004-cqrs-recommendation-for-aspnet-api.md", string.Empty, "Proposed", new DateTime(2025, 11, 10)),
         new AdrDocument("0005", "Minimal APIs Over Controller-Based APIs", "docs/adrs/0005-minimal-apis-over-controllers.md", string.Empty, "Proposed", new DateTime(2025, 11, 10)),
+        new AdrDocument("0006", "GitHub Actions CI/CD with Semantic Versioning and NuGet Publishing", "docs/adrs/0006-github-actions-cicd-semantic-versioning.md", string.Empty, "Accepted", new DateTime(2025, 11, 10)),
         // Recommendations
         new RecommendationDocument("rec-unit-testing", "Unit Testing with xUnit, Moq, Bogus", "docs/recommendations/unit-testing-xunit-moq-bogus.md", string.Empty),
         // Structures
         new StructureDocument("structure-minimal-api-endpoints", "Minimal API Endpoint Organization", "docs/structures/minimal-api-endpoint-organization.md", string.Empty),
     };
 
+    /// <summary>
+    /// Gets all registered guideline documents.
+    /// </summary>
     public static IReadOnlyList<GuidelineDocument> All => _documents;
 
     /// <summary>

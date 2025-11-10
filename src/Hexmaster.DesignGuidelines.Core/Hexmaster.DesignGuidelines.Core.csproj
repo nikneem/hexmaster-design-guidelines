@@ -5,6 +5,31 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <LangVersion>preview</LangVersion>
-  <Description>Core domain &amp; document indexing logic for Hexmaster Design Guidelines MCP server.</Description>
+    
+    <!-- Package Metadata -->
+    <PackageId>Hexmaster.DesignGuidelines.Core</PackageId>
+    <Title>Hexmaster Design Guidelines - Core</Title>
+    <Description>Core domain &amp; document indexing logic for Hexmaster Design Guidelines MCP server. Provides models and services for managing ADRs, recommendations, and structure documents.</Description>
+    <Authors>Edward Wilde</Authors>
+    <Company>Hexmaster</Company>
+    <Product>Hexmaster Design Guidelines</Product>
+    <Copyright>Copyright © 2025 Edward Wilde</Copyright>
+    <PackageProjectUrl>https://github.com/nikneem/hexmaster-design-guidelines</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/nikneem/hexmaster-design-guidelines</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>design-guidelines;architecture;adr;hexagonal-architecture;clean-architecture;dotnet;csharp</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    
+    <!-- Build Configuration -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 </Project>

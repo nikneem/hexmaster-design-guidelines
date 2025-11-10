@@ -1,0 +1,156 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  COVERAGE_THRESHOLD: 80
+
+jobs:
+  build-test-publish:
+    name: Build, Test & Publish
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for GitVersion
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v1
+        with:
+          versionSpec: '6.x'
+      
+      - name: Determine Version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v1
+        with:
+          useConfigFile: true
+          configFilePath: GitVersion.yml
+      
+      - name: Display Version
+        run: |
+          echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
+          echo "NuGetVersion: ${{ steps.gitversion.outputs.nuGetVersion }}"
+          echo "AssemblySemVer: ${{ steps.gitversion.outputs.assemblySemVer }}"
+      
+      - name: Restore dependencies
+        run: dotnet restore src/hexmaster-design-guidelines.sln
+      
+      - name: Build
+        run: |
+          dotnet build src/hexmaster-design-guidelines.sln \
+            --configuration Release \
+            --no-restore \
+            /p:Version=${{ steps.gitversion.outputs.assemblySemVer }} \
+            /p:AssemblyVersion=${{ steps.gitversion.outputs.assemblySemVer }} \
+            /p:FileVersion=${{ steps.gitversion.outputs.assemblySemFileVer }} \
+            /p:InformationalVersion=${{ steps.gitversion.outputs.informationalVersion }}
+      
+      - name: Run tests with coverage
+        run: |
+          dotnet test src/Hexmaster.DesignGuidelines.Tests/Hexmaster.DesignGuidelines.Tests.csproj \
+            --configuration Release \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./coverage \
+            --logger "trx;LogFileName=test-results.trx"
+      
+      - name: Install ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+      
+      - name: Generate coverage report
+        run: |
+          reportgenerator \
+            -reports:"./coverage/**/coverage.cobertura.xml" \
+            -targetdir:"./coverage/report" \
+            -reporttypes:"Html;JsonSummary;MarkdownSummaryGithub"
+      
+      - name: Verify coverage threshold
+        run: |
+          COVERAGE=$(jq -r '.summary.linecoverage' ./coverage/report/Summary.json)
+          echo "Line Coverage: $COVERAGE%"
+          
+          # Convert to integer for comparison
+          COVERAGE_INT=$(echo "$COVERAGE" | awk '{print int($1)}')
+          
+          if [ "$COVERAGE_INT" -lt "$COVERAGE_THRESHOLD" ]; then
+            echo "❌ Coverage $COVERAGE% is below threshold of $COVERAGE_THRESHOLD%"
+            exit 1
+          else
+            echo "✅ Coverage $COVERAGE% meets threshold of $COVERAGE_THRESHOLD%"
+          fi
+      
+      - name: Upload coverage to artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: ./coverage/report
+      
+      - name: Add coverage summary to PR
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ -f ./coverage/report/SummaryGithub.md ]; then
+            cat ./coverage/report/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Pack Core library
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          dotnet pack src/Hexmaster.DesignGuidelines.Core/Hexmaster.DesignGuidelines.Core.csproj \
+            --configuration Release \
+            --no-build \
+            --output ./packages \
+            /p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersion }} \
+            /p:Version=${{ steps.gitversion.outputs.assemblySemVer }}
+      
+      - name: Pack Server
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          dotnet pack src/Hexmaster.DesignGuidelines.Server/Hexmaster.DesignGuidelines.Server.csproj \
+            --configuration Release \
+            --no-build \
+            --output ./packages \
+            /p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersion }} \
+            /p:Version=${{ steps.gitversion.outputs.assemblySemVer }}
+      
+      - name: Push to NuGet
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          dotnet nuget push ./packages/*.nupkg \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+      
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.gitversion.outputs.semVer }}
+          release_name: Release v${{ steps.gitversion.outputs.semVer }}
+          body: |
+            ## Release v${{ steps.gitversion.outputs.semVer }}
+            
+            ### Packages
+            - `Hexmaster.DesignGuidelines.Core` v${{ steps.gitversion.outputs.nuGetVersion }}
+            - `Hexmaster.DesignGuidelines.Server` v${{ steps.gitversion.outputs.nuGetVersion }}
+            
+            ### Coverage
+            See [coverage report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          draft: false
+          prerelease: false

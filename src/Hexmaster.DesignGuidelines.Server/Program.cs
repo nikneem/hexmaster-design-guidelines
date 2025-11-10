@@ -29,5 +29,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok", runtime = ".NET 9" }
 
 app.Run();
 
-// Make Program class accessible for testing
+/// <summary>
+/// Program class for testing access via WebApplicationFactory.
+/// </summary>
 public partial class Program { }

@@ -3,12 +3,20 @@ using Hexmaster.DesignGuidelines.Core.Models;
 
 namespace Hexmaster.DesignGuidelines.Core.Services;
 
+/// <summary>
+/// Service for listing and retrieving guideline documents.
+/// </summary>
 public sealed class DocumentService
 {
     private readonly HttpClient _http;
     private readonly string _repoRoot;
     private const string GitHubRawBase = "https://raw.githubusercontent.com/nikneem/hexmaster-design-guidelines/main/";
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DocumentService"/> class.
+    /// </summary>
+    /// <param name="httpClient">HTTP client for fetching documents from GitHub.</param>
+    /// <param name="repositoryRoot">The local repository root path.</param>
     public DocumentService(HttpClient httpClient, string repositoryRoot)
     {
         _http = httpClient;
@@ -16,6 +24,10 @@ public sealed class DocumentService
         _repoRoot = repositoryRoot;
     }
 
+    /// <summary>
+    /// Lists all registered documents with their metadata.
+    /// </summary>
+    /// <returns>An enumerable of document metadata objects.</returns>
     public IEnumerable<object> ListDocuments()
     {
         return DocumentRegistry.All.Select(d => new
@@ -27,6 +39,12 @@ public sealed class DocumentService
         });
     }
 
+    /// <summary>
+    /// Retrieves a document by its ID, first attempting local filesystem, then GitHub fallback.
+    /// </summary>
+    /// <param name="id">The document identifier.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A tuple containing the document metadata and content, or nulls if not found.</returns>
     public async Task<(GuidelineDocument? Doc, string? Content)> GetDocumentAsync(string id, CancellationToken ct)
     {
         var doc = DocumentRegistry.All.FirstOrDefault(d => string.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase));
