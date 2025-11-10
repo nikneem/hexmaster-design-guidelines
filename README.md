@@ -4,17 +4,17 @@ Design, architecture, style and structure guidelines for modern .NET (C#) projec
 
 ## MCP Server (C#, .NET 9)
 
-An MCP (Model Context Protocol) server implementing JSON-RPC 2.0 over stdio. Exposes design guideline documents as tools that AI assistants can call.
+An MCP (Model Context Protocol) server implementing the official Microsoft MCP SDK. Exposes design guideline documents as tools that AI assistants can call.
 
 ### Requirements
 - .NET 9 SDK
 
 ### MCP Protocol
 
-The server implements the Model Context Protocol, communicating via JSON-RPC messages over standard input/output. It exposes two tools:
+The server implements the Model Context Protocol using the official `ModelContextProtocol` NuGet package. It exposes two tools:
 
-1. **list_documents** - Lists all available design guideline documents (ADRs, recommendations, structures)
-2. **get_document** - Retrieves the content of a specific document by its ID
+1. **ListDocuments** - Lists all available design guideline documents (ADRs, recommendations, structures)
+2. **GetDocument** - Retrieves the content of a specific document by its ID
 
 Documents are served from the local repository first, with automatic fallback to GitHub raw content if not found locally.
 
@@ -26,13 +26,7 @@ From the repository root:
 dotnet run --project .\src\Hexmaster.DesignGuidelines.Server\Hexmaster.DesignGuidelines.Server.csproj
 ```
 
-The server reads JSON-RPC requests from stdin and writes responses to stdout. Example request:
-
-```json
-{"jsonrpc":"2.0","id":1,"method":"initialize"}
-{"jsonrpc":"2.0","id":2,"method":"tools/list"}
-{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list_documents","arguments":{}}}
-```
+The server uses stdio transport for MCP communication. Logs are written to stderr, JSON-RPC messages to stdout.
 
 You can override the repository root with `HEXMASTER_REPO_ROOT` environment variable if needed.
 
