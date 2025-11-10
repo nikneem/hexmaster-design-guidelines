@@ -47,9 +47,17 @@ src/
 ```
 
 ## ADRs
-- 0001: Adopt .NET 9 as Target Framework (Accepted)
+ - 0001: Adopt .NET 9 as Target Framework (Accepted)
  - 0002: Modular Monolith Project Structure (Proposed)
  - 0003: .NET Aspire Recommendation for ASP.NET Services (Proposed)
+ - 0004: CQRS Recommendation for ASP.NET API (Proposed)
+ - 0005: Minimal APIs Over Controller-Based APIs (Proposed)
+
+## Recommendations
+- Unit Testing with xUnit, Moq, Bogus (`docs/recommendations/unit-testing-xunit-moq-bogus.md`)
+
+## Structures
+- Minimal API Endpoint Organization (`docs/structures/minimal-api-endpoint-organization.md`)
 
 ## Notes
 - All code and examples target `.NET 9`.

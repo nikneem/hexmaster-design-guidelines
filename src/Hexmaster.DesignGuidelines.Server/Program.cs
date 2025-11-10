@@ -28,3 +28,6 @@ app.MapGet("/docs/{id}", async (string id, DocumentService svc, CancellationToke
 app.MapGet("/health", () => Results.Ok(new { status = "ok", runtime = ".NET 9" }));
 
 app.Run();
+
+// Make Program class accessible for testing
+public partial class Program { }
