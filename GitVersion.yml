@@ -1,45 +1,7 @@
-mode: ContinuousDelivery
+workflow: GitHubFlow/v1
 branches:
-  main:
-    regex: ^master$|^main$
-    mode: ContinuousDelivery
-    label: ''
-    increment: Patch
-    prevent-increment-of-merged-branch-version: true
-    track-merge-target: false
-    tracks-release-branches: false
-    is-release-branch: true
-    is-mainline: true
   feature:
-    regex: ^features?[/-]
-    mode: ContinuousDelivery
     label: alpha
     increment: Minor
-    prevent-increment-of-merged-branch-version: false
-    track-merge-target: false
-    tracks-release-branches: false
-    is-release-branch: false
-    is-mainline: false
   release:
-    regex: ^releases?[/-]
-    mode: ContinuousDelivery
     label: beta
-    increment: Patch
-    prevent-increment-of-merged-branch-version: true
-    track-merge-target: false
-    tracks-release-branches: false
-    is-release-branch: true
-    is-mainline: false
-  hotfix:
-    regex: ^hotfix(es)?[/-]
-    mode: ContinuousDelivery
-    label: ''
-    increment: Patch
-    prevent-increment-of-merged-branch-version: false
-    track-merge-target: false
-    tracks-release-branches: false
-    is-release-branch: false
-    is-mainline: false
-ignore:
-  sha: []
-merge-message-formats: {}
