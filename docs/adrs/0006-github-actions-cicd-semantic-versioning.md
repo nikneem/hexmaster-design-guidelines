@@ -73,6 +73,12 @@ Both projects include:
 - Symbol packages for debugging
 - Embedded README.md
 
+The **Server project** is additionally configured as a **.NET tool**:
+- `PackAsTool=true` enables installation via `dotnet tool install`
+- `ToolCommandName=hexmaster-design-guidelines-server` defines the command name
+- Can be integrated with GitHub Copilot as an MCP server in VS Code and Visual Studio
+- Provides design guidelines context to AI agents during code generation
+
 ## Consequences
 
 ### Positive

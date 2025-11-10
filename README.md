@@ -9,7 +9,7 @@ A minimal HTTP server exposes endpoints to list and fetch registered guideline d
 ### Requirements
 - .NET 9 SDK
 
-### Run
+### Run Standalone
 From the repository root:
 
 ```powershell
@@ -22,6 +22,113 @@ Endpoints:
 - `GET /docs/{id}` – fetch markdown content (local first, fallback to GitHub raw)
 
 You can override the repository root with `HEXMASTER_REPO_ROOT` environment variable if needed.
+
+### Install as GitHub Copilot MCP Tool
+
+The MCP Server can be integrated with GitHub Copilot to provide AI agents with access to design guidelines during code generation. Documents are fetched directly from GitHub, so no local clone is required.
+
+#### VS Code Setup
+
+1. **Install the package**:
+   ```bash
+   dotnet tool install --global Hexmaster.DesignGuidelines.Server
+   ```
+
+2. **Configure Copilot MCP settings**:
+   - Open VS Code
+   - Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (Mac)
+   - Type "Preferences: Open User Settings (JSON)"
+   - Add the MCP server configuration:
+
+   ```json
+   {
+     "github.copilot.chat.mcp.servers": {
+       "hexmaster-design-guidelines": {
+         "command": "hexmaster-design-guidelines-server",
+         "args": []
+       }
+     }
+   }
+   ```
+
+3. **Restart VS Code** to apply changes
+
+4. **Verify the connection**:
+   - Open GitHub Copilot Chat
+   - The MCP server should appear in the available tools
+   - Ask Copilot: "What ADRs are available in the design guidelines?"
+
+#### Visual Studio Setup
+
+1. **Install the package**:
+   ```powershell
+   dotnet tool install --global Hexmaster.DesignGuidelines.Server
+   ```
+
+2. **Configure Copilot MCP settings**:
+   - Go to `Tools` → `Options`
+   - Navigate to `GitHub` → `Copilot` → `MCP Servers`
+   - Click "Add Server"
+   - Configure:
+     - **Name:** `hexmaster-design-guidelines`
+     - **Command:** `hexmaster-design-guidelines-server`
+
+3. **Restart Visual Studio** to apply changes
+
+4. **Verify the connection**:
+   - Open GitHub Copilot Chat window
+   - The MCP server should be listed as an active tool
+   - Ask Copilot: "Show me the ADR for .NET version adoption"
+
+#### Advanced: Local Development
+
+For contributors testing local changes before publishing to GitHub:
+
+1. **Set environment variable** to your local clone:
+   ```powershell
+   # Windows PowerShell
+   $env:HEXMASTER_REPO_ROOT = "D:/projects/github.com/nikneem/hexmaster-design-guidelines"
+   
+   # Linux/Mac
+   export HEXMASTER_REPO_ROOT="/path/to/your/clone"
+   ```
+
+2. **Or configure in MCP settings** (VS Code example):
+   ```json
+   {
+     "github.copilot.chat.mcp.servers": {
+       "hexmaster-design-guidelines": {
+         "command": "hexmaster-design-guidelines-server",
+         "args": [],
+         "env": {
+           "HEXMASTER_REPO_ROOT": "/path/to/your/local/clone"
+         }
+       }
+     }
+   }
+   ```
+
+The server will prioritize local files when `HEXMASTER_REPO_ROOT` is set, falling back to GitHub if files are missing.
+
+#### Install from Local Package (Development)
+
+For testing without publishing to NuGet:
+
+```powershell
+# From the src directory
+dotnet pack Hexmaster.DesignGuidelines.Server/Hexmaster.DesignGuidelines.Server.csproj -o ./local-packages
+
+# Install from local package
+dotnet tool install --global --add-source ./local-packages Hexmaster.DesignGuidelines.Server
+```
+
+#### Uninstall
+
+To remove the tool:
+
+```bash
+dotnet tool uninstall --global Hexmaster.DesignGuidelines.Server
+```
 
 ### Registering new documents
 This repository intentionally keeps an explicit registry. When you add a file anywhere under `docs/`, register it in:

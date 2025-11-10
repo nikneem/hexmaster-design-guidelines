@@ -5,11 +5,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <LangVersion>preview</LangVersion>
+    <OutputType>Exe</OutputType>
+    <IsPackable>true</IsPackable>
+    
+    <!-- .NET Tool Configuration -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>hexmaster-design-guidelines-server</ToolCommandName>
     
     <!-- Package Metadata -->
     <PackageId>Hexmaster.DesignGuidelines.Server</PackageId>
     <Title>Hexmaster Design Guidelines - MCP Server</Title>
-    <Description>MCP Server host exposing design guideline documents via list &amp; fetch endpoints. Provides a minimal API for querying ADRs, recommendations, and structure documents.</Description>
+    <Description>MCP Server host exposing design guideline documents via list &amp; fetch endpoints. Provides a minimal API for querying ADRs, recommendations, and structure documents. Can be installed as a .NET tool for use with GitHub Copilot.</Description>
     <Authors>Edward Wilde</Authors>
     <Company>Hexmaster</Company>
     <Product>Hexmaster Design Guidelines</Product>
@@ -17,7 +23,7 @@
     <PackageProjectUrl>https://github.com/nikneem/hexmaster-design-guidelines</PackageProjectUrl>
     <RepositoryUrl>https://github.com/nikneem/hexmaster-design-guidelines</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>mcp-server;design-guidelines;architecture;adr;api;dotnet;csharp</PackageTags>
+    <PackageTags>mcp-server;design-guidelines;architecture;adr;api;dotnet;csharp;dotnet-tool;github-copilot</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
