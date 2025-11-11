@@ -62,7 +62,7 @@ This is the recommended approach for general use. Documents are automatically fe
      "servers": {
        "hexmaster-design-guidelines": {
          "type": "stdio",
-         "command": "Hexmaster.DesignGuidelines.Server",
+         "command": "hexmaster-design-guidelines-server",
          "args": []
        }
      }
