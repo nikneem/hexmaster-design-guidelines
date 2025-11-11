@@ -49,7 +49,7 @@ This is the recommended approach for general use. Documents are automatically fe
 
 1. **Install the package**:
    ```bash
-   dotnet tool install --global Hexmaster.DesignGuidelines.Server
+   dotnet tool install --global HexMaster.DesignGuidelines.Server
    ```
 
 2. **Configure VS Code MCP settings**:
@@ -86,7 +86,7 @@ This is the recommended approach for general use. Documents are automatically fe
 
 1. **Install the package**:
    ```powershell
-   dotnet tool install --global Hexmaster.DesignGuidelines.Server
+   dotnet tool install --global HexMaster.DesignGuidelines.Server
    ```
 
 2. **Configure Copilot MCP settings**:
@@ -95,7 +95,7 @@ This is the recommended approach for general use. Documents are automatically fe
    - Click "Add Server"
    - Configure:
      - **Name:** `hexmaster-design-guidelines`
-     - **Command:** `Hexmaster.DesignGuidelines.Server`
+     - **Command:** `HexMaster.DesignGuidelines.Server`
 
 3. **Restart Visual Studio** to apply changes
 
@@ -108,7 +108,7 @@ This is the recommended approach for general use. Documents are automatically fe
 
 **Uninstall**:
 ```bash
-dotnet tool uninstall --global Hexmaster.DesignGuidelines.Server
+dotnet tool uninstall --global HexMaster.DesignGuidelines.Server
 ```
 
 ---
@@ -177,7 +177,7 @@ dotnet tool install --global --add-source ./local-packages HexMaster.DesignGuide
   "servers": {
     "hexmaster-design-guidelines": {
       "type": "stdio",
-      "command": "Hexmaster.DesignGuidelines.Server",
+      "command": "HexMaster.DesignGuidelines.Server",
       "args": []
     }
   }
@@ -189,7 +189,7 @@ dotnet tool install --global --add-source ./local-packages HexMaster.DesignGuide
   "servers": {
     "hexmaster-design-guidelines": {
       "type": "stdio",
-      "command": "Hexmaster.DesignGuidelines.Server",
+      "command": "HexMaster.DesignGuidelines.Server",
       "args": [],
       "env": {
         "HEXMASTER_REPO_ROOT": "D:/projects/github.com/nikneem/hexmaster-design-guidelines"
@@ -307,7 +307,7 @@ Configuration: `GitVersion.yml` at repository root.
 ### NuGet Packages
 Both projects are published to NuGet.org:
 - **Hexmaster.DesignGuidelines.Core** – Core domain models and document services
-- **Hexmaster.DesignGuidelines.Server** – MCP Server .NET tool implementing JSON-RPC protocol
+- **HexMaster.DesignGuidelines.Server** – MCP Server .NET tool implementing JSON-RPC protocol
 
 Package features:
 - XML documentation included
