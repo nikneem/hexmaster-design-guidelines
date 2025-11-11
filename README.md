@@ -169,9 +169,11 @@ dotnet pack src/Hexmaster.DesignGuidelines.Server/Hexmaster.DesignGuidelines.Ser
 
 # Install from local package
 dotnet tool install --global --add-source ./local-packages Hexmaster.DesignGuidelines.Server
+```
 
-# Configure VS Code to use the installed tool (NO HEXMASTER_REPO_ROOT - fetches from GitHub)
-# Edit .vscode/mcp.json or %USERPROFILE%\.vscode\mcp.json:
+Configure VS Code to use the installed tool (NO HEXMASTER_REPO_ROOT - fetches from GitHub). Edit `.vscode/mcp.json` or `%USERPROFILE%\.vscode\mcp.json`:
+
+```json
 {
   "inputs": [],
   "servers": {
@@ -182,8 +184,11 @@ dotnet tool install --global --add-source ./local-packages Hexmaster.DesignGuide
     }
   }
 }
+```
 
-# ONLY if you want to test with LOCAL documents (not typical):
+ONLY if you want to test with LOCAL documents (not typical):
+
+```json
 {
   "inputs": [],
   "servers": {
