@@ -1,0 +1,32 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C#: HexMaster.CodingGuidelines.McpServer",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/HexMaster.CodingGuidelines.McpServer/bin/Debug/net9.0/HexMaster.CodingGuidelines.McpServer.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/HexMaster.CodingGuidelines.McpServer",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "C#: HexMaster.CodingGuidelines.McpServer (Release)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-release",
+      "program": "${workspaceFolder}/src/HexMaster.CodingGuidelines.McpServer/bin/Release/net9.0/HexMaster.CodingGuidelines.McpServer.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/HexMaster.CodingGuidelines.McpServer",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "C#: Attach to Process",
+      "type": "coreclr",
+      "request": "attach"
+    }
+  ]
+}
