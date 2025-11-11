@@ -37,7 +37,11 @@ builder.Services.AddSingleton<IDocumentCatalog>(sp =>
 builder.Services
     .AddMcpServer(options =>
     {
-        options.ServerInfo = new Implementation { Name = "HexMaster.CodingGuidelines.McpServer", Version = "0.1.0" };
+        options.ServerInfo = new Implementation
+        {
+            Name = "HexMaster.CodingGuidelines.McpServer",
+            Version = "0.1.0"
+        };
     })
     .WithStdioServerTransport()
     .WithToolsFromAssembly();

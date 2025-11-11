@@ -1,5 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    
+    <!-- NuGet Package Metadata -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>hexmaster-codingguidelines-mcpserver</ToolCommandName>
+    <PackageId>HexMaster.CodingGuidelines.McpServer</PackageId>
+    <Title>HexMaster Coding Guidelines MCP Server</Title>
+    <Authors>Eduard Keilholz</Authors>
+    <Company>HexMaster</Company>
+    <Description>Model Context Protocol (MCP) server providing access to HexMaster design guidelines, ADRs, and best practices for .NET development. Integrates with GitHub Copilot and other MCP-compatible AI tools.</Description>
+    <PackageProjectUrl>https://github.com/nikneem/hexmaster-design-guidelines</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/nikneem/hexmaster-design-guidelines</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>mcp;model-context-protocol;design-guidelines;adr;architecture;dotnet;csharp;copilot</PackageTags>
+    <Copyright>Copyright © Eduard Keilholz 2025</Copyright>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\HexMaster.CodingGuidelines.Docs\HexMaster.CodingGuidelines.Docs.csproj" />
   </ItemGroup>
@@ -9,11 +33,8 @@
     <PackageReference Include="ModelContextProtocol" Version="0.4.0-preview.3" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
 </Project>

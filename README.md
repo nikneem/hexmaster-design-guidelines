@@ -11,24 +11,23 @@ An MCP (Model Context Protocol) server implementing the official Microsoft MCP S
 
 ### MCP Protocol
 
-The server implements the Model Context Protocol using the official `ModelContextProtocol` NuGet package. It exposes two tools:
+The server implements the Model Context Protocol using the official `ModelContextProtocol` NuGet package. It exposes tools for:
 
 1. **ListDocuments** - Lists all available design guideline documents (ADRs, recommendations, structures)
 2. **GetDocument** - Retrieves the content of a specific document by its ID
+3. **SearchDocuments** - Searches documents by keyword or phrase
 
-Documents are served from the local repository first, with automatic fallback to GitHub raw content if not found locally.
+Documents are served from the local filesystem when available, with automatic fallback to GitHub repository content.
 
 ### Run Standalone (for testing)
 
 From the repository root:
 
 ```powershell
-dotnet run --project .\src\Hexmaster.DesignGuidelines.Server\Hexmaster.DesignGuidelines.Server.csproj
+dotnet run --project .\src\HexMaster.CodingGuidelines.McpServer\HexMaster.CodingGuidelines.McpServer.csproj
 ```
 
 The server uses stdio transport for MCP communication. Logs are written to stderr, JSON-RPC messages to stdout.
-
-You can override the repository root with `HEXMASTER_REPO_ROOT` environment variable if needed.
 
 ### Install as GitHub Copilot MCP Tool
 
@@ -49,7 +48,7 @@ This is the recommended approach for general use. Documents are automatically fe
 
 1. **Install the package**:
    ```bash
-   dotnet tool install --global HexMaster.DesignGuidelines.Server
+   dotnet tool install --global HexMaster.CodingGuidelines.McpServer
    ```
 
 2. **Configure VS Code MCP settings**:
@@ -62,7 +61,7 @@ This is the recommended approach for general use. Documents are automatically fe
      "servers": {
        "hexmaster-design-guidelines": {
          "type": "stdio",
-         "command": "hexmaster-design-guidelines-server",
+         "command": "hexmaster-codingguidelines-mcpserver",
          "args": []
        }
      }
@@ -86,7 +85,7 @@ This is the recommended approach for general use. Documents are automatically fe
 
 1. **Install the package**:
    ```powershell
-   dotnet tool install --global HexMaster.DesignGuidelines.Server
+   dotnet tool install --global HexMaster.CodingGuidelines.McpServer
    ```
 
 2. **Configure Copilot MCP settings**:
@@ -95,7 +94,7 @@ This is the recommended approach for general use. Documents are automatically fe
    - Click "Add Server"
    - Configure:
      - **Name:** `hexmaster-design-guidelines`
-     - **Command:** `HexMaster.DesignGuidelines.Server`
+     - **Command:** `hexmaster-codingguidelines-mcpserver`
 
 3. **Restart Visual Studio** to apply changes
 
@@ -108,16 +107,12 @@ This is the recommended approach for general use. Documents are automatically fe
 
 **Uninstall**:
 ```bash
-dotnet tool uninstall --global HexMaster.DesignGuidelines.Server
+dotnet tool uninstall --global HexMaster.CodingGuidelines.McpServer
 ```
 
 ---
 
 #### Scenario 2: Local Development (Run from Source)
-
-For contributors testing local changes before publishing:
----
-
 
 For contributors testing local changes before publishing to NuGet. This allows you to work with unpublished ADRs, recommendations, or structural changes.
 
@@ -129,27 +124,19 @@ For contributors testing local changes before publishing to NuGet. This allows y
    cd hexmaster-design-guidelines
    ```
 
-2. **Create `.vscode/mcp.json`** in the repository root:
-   ```bash
-   cp .vscode/mcp.json.template .vscode/mcp.json
-   ```
-
-3. **Edit `.vscode/mcp.json`** and replace `<ABSOLUTE_PATH_TO_REPO>` with your actual path:
+2. **Create or edit `.vscode/mcp.json`** in the repository root with your actual path:
    ```json
    {
      "inputs": [],
      "servers": {
-       "hexmaster-design-guidelines": {
+       "hexmaster-design-guidelines-local": {
          "type": "stdio",
          "command": "dotnet",
          "args": [
            "run",
            "--project",
-           "D:/projects/github.com/nikneem/hexmaster-design-guidelines/src/Hexmaster.DesignGuidelines.Server/Hexmaster.DesignGuidelines.Server.csproj"
-         ],
-         "env": {
-           "HEXMASTER_REPO_ROOT": "D:/projects/github.com/nikneem/hexmaster-design-guidelines"
-         }
+           "D:/projects/github.com/nikneem/hexmaster-design-guidelines/src/HexMaster.CodingGuidelines.McpServer/HexMaster.CodingGuidelines.McpServer.csproj"
+         ]
        }
      }
    }
@@ -157,7 +144,7 @@ For contributors testing local changes before publishing to NuGet. This allows y
 
 4. **Restart VS Code** - The MCP server will run directly from your local source code
 
-**How it works**: When running from source with `dotnet run`, the `HEXMASTER_REPO_ROOT` environment variable tells the server to read documents from your local `docs/` folder instead of fetching from GitHub. This allows you to test changes immediately without publishing.
+**How it works**: When running from source with `dotnet run`, the server automatically discovers and reads documents from your local `docs/` folder. This allows you to test changes immediately without publishing.
 
 **Testing Local NuGet Packages (Advanced)**
 
@@ -165,15 +152,11 @@ If you want to test the packaged tool locally before publishing to NuGet.org:
 
 ```powershell
 # Pack the project
-dotnet pack src/Hexmaster.DesignGuidelines.Server/Hexmaster.DesignGuidelines.Server.csproj -o ./local-packages
-# Install from local package
-dotnet tool install --global --add-source ./local-packages HexMaster.DesignGuidelines.Server
-```
+dotnet pack src/HexMaster.CodingGuidelines.McpServer/HexMaster.CodingGuidelines.McpServer.csproj -o ./local-packages
 
-**When to use `HEXMASTER_REPO_ROOT`**:
-- ✅ Running from source with `dotnet run` (always required)
-- ✅ Testing unpublished document changes with installed tool
-- ❌ Standard NuGet installation (documents come from GitHub automatically)
+# Install from local package
+dotnet tool install --global --add-source ./local-packages HexMaster.CodingGuidelines.McpServer
+```
 
 ---
 
@@ -234,57 +217,65 @@ src/
 ## Structures
 - Minimal API Endpoint Organization (`docs/structures/minimal-api-endpoint-organization.md`)
 
+---
+
+## Development
+
+### Building and Testing
+
+```bash
+# Build the solution
+dotnet build src/
+
+# Run all tests
+dotnet test src/
+
+# Run tests with coverage
+dotnet test src/ --collect:"XPlat Code Coverage" --results-directory ./coverage --settings coverlet.runsettings
+
+# Generate coverage report
+reportgenerator -reports:"coverage/**/coverage.cobertura.xml" -targetdir:"coverage/report" -reporttypes:"Html"
+```
+
+### Code Coverage Requirements
+- **Core Library** (`HexMaster.CodingGuidelines.Docs`): ≥80% line coverage
+- **Tests**: All tests must pass
+- Coverage reports are automatically generated in CI/CD
+
+---
+
 ## CI/CD Workflows
 
-### Pull Request Validation
-**Workflow**: `.github/workflows/pr-validation.yml`
+### Build and Publish Workflow
+**Workflow**: `.github/workflows/publish-nuget.yml`
 
-Triggers on pull requests to `main` or `develop` branches when files in `src/` or `tests/` change.
-
-Steps:
-1. **Build** – Compiles the solution in Release configuration
-2. **Test** – Runs all unit tests
-3. **Coverage** – Collects code coverage using coverlet
-4. **Report** – Generates HTML and markdown coverage reports
-5. **Threshold Check** – Enforces 80% coverage on Core library
-6. **PR Comment** – Posts coverage summary to the pull request
-7. **Artifact** – Uploads full coverage report (retained for 30 days)
-
-Coverage Requirements:
-- **Core Library**: Must maintain ≥80% line coverage
-- **Server**: Console app with limited unit test coverage (informational only)
-
-### CI/CD Pipeline
-**Workflow**: `.github/workflows/ci-cd.yml`
-
-Triggers on push to `main` branch.
+Triggers on push to `main` branch when files in `src/` change.
 
 Steps:
 1. **Versioning** – GitVersion generates semantic version
-2. **Build** – Compiles solution in Release configuration
+2. **Build** – Compiles solution in Release configuration with version info
 3. **Test** – Runs all unit tests with 80% coverage enforcement
-4. **Package** – Creates NuGet packages for Core and Server
-5. **Publish** – Pushes packages to NuGet.org
-6. **Release** – Creates GitHub release with version tag
+4. **Coverage Report** – Generates coverage summary
+5. **Package** – Creates NuGet package for the MCP Server
+6. **Publish** – Pushes package to NuGet.org
+7. **Release** – Creates GitHub release with version tag and artifacts
 
-Semantic Versioning Strategy:
+Semantic Versioning Strategy (GitHubFlow):
 - **Main branch**: 1.0.0, 1.0.1, 1.0.2... (patch increments)
-- **Feature branches** (`feature/*`): 1.1.0-alpha.1, 1.1.0-alpha.2... (minor with pre-release)
-- **Release branches** (`release/*`): 1.0.0-beta.1, 1.0.0-beta.2... (patch with pre-release)
-- **Hotfix branches** (`hotfix/*`): Patch increment
+- **Feature branches** (`feature/*`): 1.1.0-alpha.1, 1.1.0-alpha.2... (minor with alpha pre-release)
+- **Release branches** (`release/*`): 1.0.0-beta.1, 1.0.0-beta.2... (beta pre-release)
 
 Configuration: `GitVersion.yml` at repository root.
 
-### NuGet Packages
-Both projects are published to NuGet.org:
-- **Hexmaster.DesignGuidelines.Core** – Core domain models and document services
-- **HexMaster.DesignGuidelines.Server** – MCP Server .NET tool implementing JSON-RPC protocol
+### NuGet Package
+Published to NuGet.org:
+- **HexMaster.CodingGuidelines.McpServer** – MCP Server .NET global tool
 
 Package features:
-- XML documentation included
-- Symbol packages (`.snupkg`) for debugging
+- .NET 9 global tool
+- Automatic document discovery from filesystem or GitHub
+- ModelContextProtocol SDK integration
 - MIT license
-- Embedded README.md
 
 ### Setup Requirements
 To enable automated publishing, add the following GitHub secret:
@@ -305,6 +296,6 @@ dotnet-gitversion
 
 ## Notes
 - All code and examples target `.NET 9`.
-- The MCP Server prefers local files but can fall back to GitHub raw for missing content.
-- Coverage reports are generated for every build and attached as artifacts
-- Pull requests include coverage summaries in comments automatically
+- The MCP Server uses the `FileSystemDocumentCatalog` for local development and `GitHubDocumentCatalog` for published scenarios.
+- Coverage threshold is enforced at 80% for core library code.
+- CI/CD pipeline only triggers on changes to `src/` folder when pushed to `main` branch.
