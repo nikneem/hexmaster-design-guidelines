@@ -13,7 +13,7 @@ public class DocumentCatalogTests
         var catalog = new FileSystemDocumentCatalog();
         var docs = catalog.ListDocuments();
         Assert.NotEmpty(docs);
-        Assert.Contains(docs, d => d.Id.Contains("naming"));
+        Assert.Contains(docs, d => d.Id.Contains("adopt-dotnet"));
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public class DocumentCatalogTests
     public void Search_FindsExpected()
     {
         var catalog = new FileSystemDocumentCatalog();
-        var results = catalog.Search("initialize project structure");
+        var results = catalog.Search("target framework");
         Assert.Contains(results, r => r.Id.Contains("0001"));
     }
 }
