@@ -62,7 +62,7 @@ This is the recommended approach for general use. Documents are automatically fe
      "servers": {
        "hexmaster-design-guidelines": {
          "type": "stdio",
-         "command": "hexmaster-design-guidelines-server",
+         "command": "Hexmaster.DesignGuidelines.Server",
          "args": []
        }
      }
@@ -168,10 +168,12 @@ If you want to test the packaged tool locally before publishing to NuGet.org:
 dotnet pack src/Hexmaster.DesignGuidelines.Server/Hexmaster.DesignGuidelines.Server.csproj -o ./local-packages
 
 # Install from local package
-dotnet tool install --global --add-source ./local-packages HexMaster.DesignGuidelines.Server
+dotnet tool install --global --add-source ./local-packages Hexmaster.DesignGuidelines.Server
+```
 
-# Configure VS Code to use the installed tool (NO HEXMASTER_REPO_ROOT - fetches from GitHub)
-# Edit .vscode/mcp.json or %USERPROFILE%\.vscode\mcp.json:
+Configure VS Code to use the installed tool (NO HEXMASTER_REPO_ROOT - fetches from GitHub). Edit `.vscode/mcp.json` or `%USERPROFILE%\.vscode\mcp.json`:
+
+```json
 {
   "inputs": [],
   "servers": {
@@ -182,8 +184,11 @@ dotnet tool install --global --add-source ./local-packages HexMaster.DesignGuide
     }
   }
 }
+```
 
-# ONLY if you want to test with LOCAL documents (not typical):
+ONLY if you want to test with LOCAL documents (not typical):
+
+```json
 {
   "inputs": [],
   "servers": {
