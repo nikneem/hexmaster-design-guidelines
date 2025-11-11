@@ -49,7 +49,7 @@ This is the recommended approach for general use. Documents are automatically fe
 
 1. **Install the package**:
    ```bash
-   dotnet tool install --global Hexmaster.DesignGuidelines.Server
+   dotnet tool install --global HexMaster.DesignGuidelines.Server
    ```
 
 2. **Configure VS Code MCP settings**:
@@ -62,7 +62,7 @@ This is the recommended approach for general use. Documents are automatically fe
      "servers": {
        "hexmaster-design-guidelines": {
          "type": "stdio",
-         "command": "Hexmaster.DesignGuidelines.Server",
+         "command": "HexMaster.DesignGuidelines.Server",
          "args": []
        }
      }
@@ -86,7 +86,7 @@ This is the recommended approach for general use. Documents are automatically fe
 
 1. **Install the package**:
    ```powershell
-   dotnet tool install --global Hexmaster.DesignGuidelines.Server
+   dotnet tool install --global HexMaster.DesignGuidelines.Server
    ```
 
 2. **Configure Copilot MCP settings**:
@@ -95,7 +95,7 @@ This is the recommended approach for general use. Documents are automatically fe
    - Click "Add Server"
    - Configure:
      - **Name:** `hexmaster-design-guidelines`
-     - **Command:** `Hexmaster.DesignGuidelines.Server`
+     - **Command:** `HexMaster.DesignGuidelines.Server`
 
 3. **Restart Visual Studio** to apply changes
 
@@ -108,7 +108,7 @@ This is the recommended approach for general use. Documents are automatically fe
 
 **Uninstall**:
 ```bash
-dotnet tool uninstall --global Hexmaster.DesignGuidelines.Server
+dotnet tool uninstall --global HexMaster.DesignGuidelines.Server
 ```
 
 ---
@@ -168,33 +168,28 @@ If you want to test the packaged tool locally before publishing to NuGet.org:
 dotnet pack src/Hexmaster.DesignGuidelines.Server/Hexmaster.DesignGuidelines.Server.csproj -o ./local-packages
 
 # Install from local package
-dotnet tool install --global --add-source ./local-packages Hexmaster.DesignGuidelines.Server
-```
+dotnet tool install --global --add-source ./local-packages HexMaster.DesignGuidelines.Server
 
-Configure VS Code to use the installed tool (NO HEXMASTER_REPO_ROOT - fetches from GitHub). Edit `.vscode/mcp.json` or `%USERPROFILE%\.vscode\mcp.json`:
-
-```json
+# Configure VS Code to use the installed tool (NO HEXMASTER_REPO_ROOT - fetches from GitHub)
+# Edit .vscode/mcp.json or %USERPROFILE%\.vscode\mcp.json:
 {
   "inputs": [],
   "servers": {
     "hexmaster-design-guidelines": {
       "type": "stdio",
-      "command": "Hexmaster.DesignGuidelines.Server",
+      "command": "HexMaster.DesignGuidelines.Server",
       "args": []
     }
   }
 }
-```
 
-ONLY if you want to test with LOCAL documents (not typical):
-
-```json
+# ONLY if you want to test with LOCAL documents (not typical):
 {
   "inputs": [],
   "servers": {
     "hexmaster-design-guidelines": {
       "type": "stdio",
-      "command": "Hexmaster.DesignGuidelines.Server",
+      "command": "HexMaster.DesignGuidelines.Server",
       "args": [],
       "env": {
         "HEXMASTER_REPO_ROOT": "D:/projects/github.com/nikneem/hexmaster-design-guidelines"
@@ -203,6 +198,7 @@ ONLY if you want to test with LOCAL documents (not typical):
   }
 }
 ```
+
 
 **When to use `HEXMASTER_REPO_ROOT`**:
 - ✅ Running from source with `dotnet run` (always required)
@@ -312,7 +308,7 @@ Configuration: `GitVersion.yml` at repository root.
 ### NuGet Packages
 Both projects are published to NuGet.org:
 - **Hexmaster.DesignGuidelines.Core** – Core domain models and document services
-- **Hexmaster.DesignGuidelines.Server** – MCP Server .NET tool implementing JSON-RPC protocol
+- **HexMaster.DesignGuidelines.Server** – MCP Server .NET tool implementing JSON-RPC protocol
 
 Package features:
 - XML documentation included
