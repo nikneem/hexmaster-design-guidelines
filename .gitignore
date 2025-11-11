@@ -411,6 +411,9 @@ FodyWeavers.xsd
 # Built Visual Studio Code Extensions
 *.vsix
 
+# MCP Server configuration (environment-specific)
+.vscode/mcp.json
+
 # Windows Installer files from build outputs
 *.cab
 *.msi
