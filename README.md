@@ -118,7 +118,6 @@ dotnet tool uninstall --global Hexmaster.DesignGuidelines.Server
 For contributors testing local changes before publishing:
 ---
 
-#### Scenario 2: Local Development (Run from Source)
 
 For contributors testing local changes before publishing to NuGet. This allows you to work with unpublished ADRs, recommendations, or structural changes.
 
