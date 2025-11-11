@@ -62,7 +62,7 @@ This is the recommended approach for general use. Documents are automatically fe
      "servers": {
        "hexmaster-design-guidelines": {
          "type": "stdio",
-         "command": "HexMaster.DesignGuidelines.Server",
+         "command": "hexmaster-design-guidelines-server",
          "args": []
        }
      }
@@ -166,39 +166,9 @@ If you want to test the packaged tool locally before publishing to NuGet.org:
 ```powershell
 # Pack the project
 dotnet pack src/Hexmaster.DesignGuidelines.Server/Hexmaster.DesignGuidelines.Server.csproj -o ./local-packages
-
 # Install from local package
 dotnet tool install --global --add-source ./local-packages HexMaster.DesignGuidelines.Server
-
-# Configure VS Code to use the installed tool (NO HEXMASTER_REPO_ROOT - fetches from GitHub)
-# Edit .vscode/mcp.json or %USERPROFILE%\.vscode\mcp.json:
-{
-  "inputs": [],
-  "servers": {
-    "hexmaster-design-guidelines": {
-      "type": "stdio",
-      "command": "HexMaster.DesignGuidelines.Server",
-      "args": []
-    }
-  }
-}
-
-# ONLY if you want to test with LOCAL documents (not typical):
-{
-  "inputs": [],
-  "servers": {
-    "hexmaster-design-guidelines": {
-      "type": "stdio",
-      "command": "HexMaster.DesignGuidelines.Server",
-      "args": [],
-      "env": {
-        "HEXMASTER_REPO_ROOT": "D:/projects/github.com/nikneem/hexmaster-design-guidelines"
-      }
-    }
-  }
-}
 ```
-
 
 **When to use `HEXMASTER_REPO_ROOT`**:
 - ✅ Running from source with `dotnet run` (always required)
