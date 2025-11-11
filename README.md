@@ -168,7 +168,7 @@ If you want to test the packaged tool locally before publishing to NuGet.org:
 dotnet pack src/Hexmaster.DesignGuidelines.Server/Hexmaster.DesignGuidelines.Server.csproj -o ./local-packages
 
 # Install from local package
-dotnet tool install --global --add-source ./local-packages Hexmaster.DesignGuidelines.Server
+dotnet tool install --global --add-source ./local-packages HexMaster.DesignGuidelines.Server
 
 # Configure VS Code to use the installed tool (NO HEXMASTER_REPO_ROOT - fetches from GitHub)
 # Edit .vscode/mcp.json or %USERPROFILE%\.vscode\mcp.json:
