@@ -14,6 +14,10 @@ env:
   PROJECT_PATH: 'src/HexMaster.CodingGuidelines.McpServer/HexMaster.CodingGuidelines.McpServer.csproj'
   TEST_PROJECT_PATH: 'src/HexMaster.CodingGuidelines.McpServer.Tests/HexMaster.CodingGuidelines.McpServer.Tests.csproj'
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   build-test-publish:
     runs-on: ubuntu-latest
