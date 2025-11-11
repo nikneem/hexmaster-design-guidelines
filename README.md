@@ -199,6 +199,7 @@ dotnet tool install --global --add-source ./local-packages HexMaster.DesignGuide
 }
 ```
 
+
 **When to use `HEXMASTER_REPO_ROOT`**:
 - ✅ Running from source with `dotnet run` (always required)
 - ✅ Testing unpublished document changes with installed tool
