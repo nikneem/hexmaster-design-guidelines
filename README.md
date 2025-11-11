@@ -32,40 +32,57 @@ You can override the repository root with `HEXMASTER_REPO_ROOT` environment vari
 
 ### Install as GitHub Copilot MCP Tool
 
-The MCP Server can be integrated with GitHub Copilot to provide AI agents with access to design guidelines during code generation. Documents are fetched directly from GitHub, so no local clone is required.
+The MCP Server can be integrated with GitHub Copilot to provide AI agents with access to design guidelines during code generation.
 
-#### VS Code Setup
+There are two usage scenarios:
+
+1. **Standard Installation** (Recommended) - Install from NuGet, documents fetched from GitHub
+2. **Local Development** - Run from source with local documents for testing changes
+
+---
+
+#### Scenario 1: Standard Installation (NuGet Global Tool)
+
+This is the recommended approach for general use. Documents are automatically fetched from the GitHub repository, so no local clone is needed.
+
+**VS Code Setup**
 
 1. **Install the package**:
    ```bash
    dotnet tool install --global Hexmaster.DesignGuidelines.Server
    ```
 
-2. **Configure Copilot MCP settings**:
-   - Open VS Code
-   - Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (Mac)
-   - Type "Preferences: Open User Settings (JSON)"
-   - Add the MCP server configuration:
-
+2. **Configure VS Code MCP settings**:
+   
+   Create or edit `.vscode/mcp.json` in your user profile or workspace:
+   
    ```json
    {
-     "github.copilot.chat.mcp.servers": {
+     "inputs": [],
+     "servers": {
        "hexmaster-design-guidelines": {
-         "command": "hexmaster-design-guidelines-server",
+         "type": "stdio",
+         "command": "Hexmaster.DesignGuidelines.Server",
          "args": []
        }
      }
    }
    ```
 
+   **Location options:**
+   - **User-level** (all workspaces): `%USERPROFILE%\.vscode\mcp.json` (Windows) or `~/.vscode/mcp.json` (Mac/Linux)
+   - **Workspace-level** (specific project): `.vscode/mcp.json` in your project root
+
 3. **Restart VS Code** to apply changes
 
 4. **Verify the connection**:
+   - Open the Output panel: View → Output
+   - Select "MCP" from the dropdown
+   - You should see server startup logs
    - Open GitHub Copilot Chat
-   - The MCP server should appear in the available tools
    - Ask Copilot: "What ADRs are available in the design guidelines?"
 
-#### Visual Studio Setup
+**Visual Studio Setup**
 
 1. **Install the package**:
    ```powershell
@@ -78,7 +95,7 @@ The MCP Server can be integrated with GitHub Copilot to provide AI agents with a
    - Click "Add Server"
    - Configure:
      - **Name:** `hexmaster-design-guidelines`
-     - **Command:** `hexmaster-design-guidelines-server`
+     - **Command:** `Hexmaster.DesignGuidelines.Server`
 
 3. **Restart Visual Studio** to apply changes
 
@@ -87,55 +104,129 @@ The MCP Server can be integrated with GitHub Copilot to provide AI agents with a
    - The MCP server should be listed as an active tool
    - Ask Copilot: "Show me the ADR for .NET version adoption"
 
-#### Advanced: Local Development
+**How it works**: When installed as a global tool, the server automatically fetches documents from the GitHub repository (`https://github.com/nikneem/hexmaster-design-guidelines`). No local clone is required, and you'll always get the latest published content from the `main` branch.
 
-For contributors testing local changes before publishing to GitHub:
+**Uninstall**:
+```bash
+dotnet tool uninstall --global Hexmaster.DesignGuidelines.Server
+```
 
-1. **Set environment variable** to your local clone:
-   ```powershell
-   # Windows PowerShell
-   $env:HEXMASTER_REPO_ROOT = "D:/projects/github.com/nikneem/hexmaster-design-guidelines"
-   
-   # Linux/Mac
-   export HEXMASTER_REPO_ROOT="/path/to/your/clone"
+---
+
+#### Scenario 2: Local Development (Run from Source)
+
+For contributors testing local changes before publishing:
+---
+
+#### Scenario 2: Local Development (Run from Source)
+
+For contributors testing local changes before publishing to NuGet. This allows you to work with unpublished ADRs, recommendations, or structural changes.
+
+**VS Code Setup**
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/nikneem/hexmaster-design-guidelines.git
+   cd hexmaster-design-guidelines
    ```
 
-2. **Or configure in MCP settings** (VS Code example):
+2. **Create `.vscode/mcp.json`** in the repository root:
+   ```bash
+   cp .vscode/mcp.json.template .vscode/mcp.json
+   ```
+
+3. **Edit `.vscode/mcp.json`** and replace `<ABSOLUTE_PATH_TO_REPO>` with your actual path:
    ```json
    {
-     "github.copilot.chat.mcp.servers": {
+     "inputs": [],
+     "servers": {
        "hexmaster-design-guidelines": {
-         "command": "hexmaster-design-guidelines-server",
-         "args": [],
+         "type": "stdio",
+         "command": "dotnet",
+         "args": [
+           "run",
+           "--project",
+           "D:/projects/github.com/nikneem/hexmaster-design-guidelines/src/Hexmaster.DesignGuidelines.Server/Hexmaster.DesignGuidelines.Server.csproj"
+         ],
          "env": {
-           "HEXMASTER_REPO_ROOT": "/path/to/your/local/clone"
+           "HEXMASTER_REPO_ROOT": "D:/projects/github.com/nikneem/hexmaster-design-guidelines"
          }
        }
      }
    }
    ```
 
-The server will prioritize local files when `HEXMASTER_REPO_ROOT` is set, falling back to GitHub if files are missing.
+4. **Restart VS Code** - The MCP server will run directly from your local source code
 
-#### Install from Local Package (Development)
+**How it works**: When running from source with `dotnet run`, the `HEXMASTER_REPO_ROOT` environment variable tells the server to read documents from your local `docs/` folder instead of fetching from GitHub. This allows you to test changes immediately without publishing.
 
-For testing without publishing to NuGet:
+**Testing Local NuGet Packages (Advanced)**
+
+If you want to test the packaged tool locally before publishing to NuGet.org:
 
 ```powershell
-# From the src directory
-dotnet pack Hexmaster.DesignGuidelines.Server/Hexmaster.DesignGuidelines.Server.csproj -o ./local-packages
+# Pack the project
+dotnet pack src/Hexmaster.DesignGuidelines.Server/Hexmaster.DesignGuidelines.Server.csproj -o ./local-packages
 
 # Install from local package
 dotnet tool install --global --add-source ./local-packages Hexmaster.DesignGuidelines.Server
+
+# Configure VS Code to use the installed tool (NO HEXMASTER_REPO_ROOT - fetches from GitHub)
+# Edit .vscode/mcp.json or %USERPROFILE%\.vscode\mcp.json:
+{
+  "inputs": [],
+  "servers": {
+    "hexmaster-design-guidelines": {
+      "type": "stdio",
+      "command": "Hexmaster.DesignGuidelines.Server",
+      "args": []
+    }
+  }
+}
+
+# ONLY if you want to test with LOCAL documents (not typical):
+{
+  "inputs": [],
+  "servers": {
+    "hexmaster-design-guidelines": {
+      "type": "stdio",
+      "command": "Hexmaster.DesignGuidelines.Server",
+      "args": [],
+      "env": {
+        "HEXMASTER_REPO_ROOT": "D:/projects/github.com/nikneem/hexmaster-design-guidelines"
+      }
+    }
+  }
+}
 ```
 
-#### Uninstall
+**When to use `HEXMASTER_REPO_ROOT`**:
+- ✅ Running from source with `dotnet run` (always required)
+- ✅ Testing unpublished document changes with installed tool
+- ❌ Standard NuGet installation (documents come from GitHub automatically)
 
-To remove the tool:
+---
 
-```bash
-dotnet tool uninstall --global Hexmaster.DesignGuidelines.Server
-```
+#### Troubleshooting
+
+**Server doesn't appear in Copilot**
+- Check Output panel (View → Output) and select "MCP" from dropdown
+- Verify the command path is correct (use full path if needed)
+- Ensure .NET 9 SDK is installed: `dotnet --version`
+- Try restarting VS Code
+
+**Documents not loading**
+- For NuGet installation: Check internet connectivity (docs fetched from GitHub)
+- For local development: Verify `HEXMASTER_REPO_ROOT` points to repository root
+- Check server logs in MCP Output panel
+
+**Global tool not found**
+- Verify installation: `dotnet tool list --global`
+- Check PATH includes .NET tools directory
+  - Windows: `%USERPROFILE%\.dotnet\tools`
+  - Mac/Linux: `~/.dotnet/tools`
+
+---
 
 ### Registering new documents
 This repository intentionally keeps an explicit registry. When you add a file anywhere under `docs/`, register it in:
