@@ -20,6 +20,7 @@ The MCP Server should enable agents to query: "What is the recommended way to st
 ```
 /README.md                     – High-level name; expand later.
 /docs/
+  index.json                   – Document metadata index (MUST be updated when docs change)
   adrs/                        – Each ADR: `NNNN-title.md` (sequential 0001, 0002 ...)
   designs/                     – Deeper design explorations & diagrams
   recommendations/             – Prescriptive guidance & best practices
@@ -29,6 +30,37 @@ The MCP Server should enable agents to query: "What is the recommended way to st
 /.github/copilot-instructions.md – This file (guides Copilot behaviors)
 ```
 Future expansions may add: `scripts/`, `examples/`, `reference-implementations/`.
+
+### Important: index.json Maintenance
+The `docs/index.json` file serves as the authoritative document registry for the MCP Server (see ADR 0006). 
+
+**CRITICAL REQUIREMENT**: Whenever you add, modify, or remove documentation files in `docs/`, you MUST regenerate `docs/index.json` to reflect those changes.
+
+To regenerate the index:
+1. Run through all markdown files in `docs/` subdirectories
+2. Extract metadata from front matter (title, tags)
+3. Generate entries with: id, title, category, relativePath, tags
+4. Update the `generated` timestamp
+5. Save to `docs/index.json`
+
+Example structure:
+```json
+{
+  "version": "1.0",
+  "generated": "2025-11-19T10:30:00Z",
+  "documents": [
+    {
+      "id": "document-id",
+      "title": "Document Title",
+      "category": "adrs",
+      "relativePath": "adrs/document.md",
+      "tags": ["tag1", "tag2"]
+    }
+  ]
+}
+```
+
+Without an up-to-date index.json, the MCP Server will fall back to expensive directory traversal, defeating the performance optimization.
 
 ---
 ## 3. Document Taxonomy & Conventions

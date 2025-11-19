@@ -1,0 +1,119 @@
+{
+    "version": "1.0",
+    "generated": "2025-11-19T00:00:00Z",
+    "documents": [
+        {
+            "id": "0001-adopt-dotnet-10",
+            "title": "ADR 0001: Adopt .NET 10 as Target Framework",
+            "category": "adrs",
+            "relativePath": "adrs/0001-adopt-dotnet-10.md",
+            "tags": [
+                "dotnet",
+                "adr",
+                "framework",
+                "lts",
+                "runtime",
+                "csharp"
+            ]
+        },
+        {
+            "id": "0002-modular-monolith-structure",
+            "title": "ADR 0002: Modular Monolith Project Structure",
+            "category": "adrs",
+            "relativePath": "adrs/0002-modular-monolith-structure.md",
+            "tags": [
+                "architecture",
+                "modular-monolith",
+                "structure",
+                "adr"
+            ]
+        },
+        {
+            "id": "0003-recommend-aspire-for-aspnet-projects",
+            "title": "ADR 0003: Strong Recommendation to Adopt .NET Aspire for ASP.NET Web Services",
+            "category": "adrs",
+            "relativePath": "adrs/0003-recommend-aspire-for-aspnet-projects.md",
+            "tags": [
+                "aspire",
+                "orchestration",
+                "aspnet",
+                "adr",
+                "cloud-native"
+            ]
+        },
+        {
+            "id": "0004-cqrs-recommendation-for-aspnet-api",
+            "title": "ADR 0004: Recommendation to Implement CQRS for ASP.NET API Projects",
+            "category": "adrs",
+            "relativePath": "adrs/0004-cqrs-recommendation-for-aspnet-api.md",
+            "tags": [
+                "cqrs",
+                "architecture",
+                "aspnet",
+                "adr",
+                "api"
+            ]
+        },
+        {
+            "id": "0005-minimal-apis-over-controllers",
+            "title": "ADR 0005: Recommend Minimal APIs Over Controller-Based APIs",
+            "category": "adrs",
+            "relativePath": "adrs/0005-minimal-apis-over-controllers.md",
+            "tags": [
+                "minimal-apis",
+                "aspnet",
+                "adr",
+                "web"
+            ]
+        },
+        {
+            "id": "modular-solution-structure",
+            "title": "Modular Solution Structure Design",
+            "category": "designs",
+            "relativePath": "designs/modular-solution-structure.md",
+            "tags": [
+                "design",
+                "modular",
+                "architecture",
+                "aspire"
+            ]
+        },
+        {
+            "id": "pragmatic-domain-driven-design",
+            "title": "Pragmatic Domain-Driven Design",
+            "category": "designs",
+            "relativePath": "designs/pragmatic-domain-driven-design.md",
+            "tags": [
+                "design",
+                "ddd",
+                "domain-driven-design",
+                "architecture"
+            ]
+        },
+        {
+            "id": "unit-testing-xunit-moq-bogus",
+            "title": "Unit testing with xUnit, Moq and Bogus",
+            "category": "recommendations",
+            "relativePath": "recommendations/unit-testing-xunit-moq-bogus.md",
+            "tags": [
+                "testing",
+                "xunit",
+                "moq",
+                "bogus",
+                "unit-testing"
+            ]
+        },
+        {
+            "id": "minimal-api-endpoint-organization",
+            "title": "Minimal API Endpoint Organization",
+            "category": "structures",
+            "relativePath": "structures/minimal-api-endpoint-organization.md",
+            "tags": [
+                "api",
+                "minimal-api",
+                "structure",
+                "web"
+            ]
+        }
+    ]
+}

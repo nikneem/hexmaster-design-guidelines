@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,7 +11,8 @@ using HexMaster.CodingGuidelines.Docs.Abstractions;
 namespace HexMaster.CodingGuidelines.Docs.Infrastructure;
 
 /// <summary>
-/// Loads markdown documents from an embedded folder structure.
+/// Loads markdown documents from a local filesystem folder structure.
+/// Prefers docs/index.json if available; falls back to directory scanning.
 /// </summary>
 public sealed class FileSystemDocumentCatalog : IDocumentCatalog
 {
@@ -22,7 +24,7 @@ public sealed class FileSystemDocumentCatalog : IDocumentCatalog
     public FileSystemDocumentCatalog(string? root = null)
     {
         _root = root ?? ResolveDefaultRoot();
-        _documents = new Lazy<IReadOnlyList<DocumentInfo>>(Scan);
+        _documents = new Lazy<IReadOnlyList<DocumentInfo>>(LoadDocuments);
     }
 
     private static string ResolveDefaultRoot()
@@ -85,9 +87,46 @@ public sealed class FileSystemDocumentCatalog : IDocumentCatalog
         return await reader.ReadToEndAsync();
     }
 
-    private IReadOnlyList<DocumentInfo> Scan()
+    private IReadOnlyList<DocumentInfo> LoadDocuments()
     {
         if (!Directory.Exists(_root)) return Array.Empty<DocumentInfo>();
+
+        // Try loading from index.json first
+        var indexPath = Path.Combine(_root, "index.json");
+        if (File.Exists(indexPath))
+        {
+            try
+            {
+                var indexJson = File.ReadAllText(indexPath);
+                var indexData = JsonSerializer.Deserialize<DocumentIndexFile>(indexJson, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (indexData?.Documents != null && indexData.Documents.Count > 0)
+                {
+                    return indexData.Documents
+                        .Select(d => new DocumentInfo(
+                            d.Id,
+                            d.Title,
+                            d.Category,
+                            d.RelativePath,
+                            (IReadOnlyList<string>)(d.Tags ?? new List<string>())))
+                        .ToList();
+                }
+            }
+            catch
+            {
+                // Index invalid or corrupted, fall back to scanning
+            }
+        }
+
+        // Fallback: scan directory structure
+        return ScanDirectories();
+    }
+
+    private IReadOnlyList<DocumentInfo> ScanDirectories()
+    {
         var files = Directory.GetFiles(_root, "*.md", SearchOption.AllDirectories);
         var list = new List<DocumentInfo>(files.Length);
         foreach (var file in files)
@@ -156,5 +195,21 @@ public sealed class FileSystemDocumentCatalog : IDocumentCatalog
             }
         }
         return (title, tags);
+    }
+
+    private sealed class DocumentIndexFile
+    {
+        public string Version { get; set; } = string.Empty;
+        public string Generated { get; set; } = string.Empty;
+        public List<DocumentIndexEntry> Documents { get; set; } = new();
+    }
+
+    private sealed class DocumentIndexEntry
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string RelativePath { get; set; } = string.Empty;
+        public List<string>? Tags { get; set; }
     }
 }

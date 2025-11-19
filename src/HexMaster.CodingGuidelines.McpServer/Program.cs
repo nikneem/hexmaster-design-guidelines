@@ -1,5 +1,6 @@
 ﻿using HexMaster.CodingGuidelines.Docs.Abstractions;
 using HexMaster.CodingGuidelines.Docs.Infrastructure;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -20,6 +21,9 @@ builder.Logging.AddConsole(consoleLogOptions =>
 // Register HttpClient factory manually to avoid optional extensions
 builder.Services.AddSingleton(new HttpClient());
 
+// Add memory cache for document index caching
+builder.Services.AddMemoryCache();
+
 // Resolve docs provider based on environment settings
 builder.Services.AddSingleton<IDocumentCatalog>(sp =>
 {
@@ -31,7 +35,8 @@ builder.Services.AddSingleton<IDocumentCatalog>(sp =>
 
     // Default to GitHub
     var client = sp.GetRequiredService<HttpClient>();
-    return new GitHubDocumentCatalog(httpClient: client);
+    var cache = sp.GetRequiredService<IMemoryCache>();
+    return new GitHubDocumentCatalog(cache: cache, httpClient: client);
 });
 
 builder.Services

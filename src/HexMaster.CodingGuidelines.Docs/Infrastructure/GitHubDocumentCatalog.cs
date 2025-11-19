@@ -6,11 +6,13 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using HexMaster.CodingGuidelines.Docs.Abstractions;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace HexMaster.CodingGuidelines.Docs.Infrastructure;
 
 /// <summary>
-/// Loads Markdown documents directly from the GitHub repository's docs/ folder using the GitHub API/raw content.
+/// Loads Markdown documents from the GitHub repository's docs/ folder.
+/// Prefers docs/index.json with 10-minute cache; falls back to directory traversal if index is missing.
 /// Default repo: nikneem/hexmaster-design-guidelines (branch: main).
 /// </summary>
 public sealed class GitHubDocumentCatalog : IDocumentCatalog, IAsyncDisposable
@@ -19,21 +21,28 @@ public sealed class GitHubDocumentCatalog : IDocumentCatalog, IAsyncDisposable
     private readonly string _repo;
     private readonly string _branch;
     private readonly HttpClient _http;
+    private readonly IMemoryCache _cache;
     private readonly Lazy<Task<IReadOnlyList<DocumentInfo>>> _documents;
 
-    public GitHubDocumentCatalog(string owner = "nikneem", string repo = "hexmaster-design-guidelines", string branch = "main", HttpClient? httpClient = null)
+    public GitHubDocumentCatalog(
+        IMemoryCache cache,
+        string owner = "nikneem",
+        string repo = "hexmaster-design-guidelines",
+        string branch = "main",
+        HttpClient? httpClient = null)
     {
         _owner = owner;
         _repo = repo;
         _branch = branch;
         _http = httpClient ?? new HttpClient();
+        _cache = cache;
         _http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("HexMaster.McpServer", "1.0"));
         var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
         if (!string.IsNullOrWhiteSpace(token))
         {
             _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
-        _documents = new Lazy<Task<IReadOnlyList<DocumentInfo>>>(LoadIndexAsync);
+        _documents = new Lazy<Task<IReadOnlyList<DocumentInfo>>>(LoadDocumentsAsync);
     }
 
     public IReadOnlyList<DocumentInfo> ListDocuments() => _documents.Value.GetAwaiter().GetResult();
@@ -77,7 +86,64 @@ public sealed class GitHubDocumentCatalog : IDocumentCatalog, IAsyncDisposable
         throw new InvalidOperationException($"Document '{id}' not found in GitHub index");
     }
 
-    private async Task<IReadOnlyList<DocumentInfo>> LoadIndexAsync()
+    private async Task<IReadOnlyList<DocumentInfo>> LoadDocumentsAsync()
+    {
+        var cacheKey = $"docs-index:{_owner}/{_repo}/{_branch}";
+
+        // Try cache first
+        if (_cache.TryGetValue<IReadOnlyList<DocumentInfo>>(cacheKey, out var cached))
+        {
+            return cached!;
+        }
+
+        // Try loading from index.json
+        try
+        {
+            var indexUrl = $"https://raw.githubusercontent.com/{_owner}/{_repo}/{_branch}/docs/index.json";
+            var indexJson = await _http.GetStringAsync(indexUrl).ConfigureAwait(false);
+            var indexData = JsonSerializer.Deserialize<DocumentIndexFile>(indexJson, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (indexData?.Documents != null && indexData.Documents.Count > 0)
+            {
+                var documents = indexData.Documents
+                    .Select(d => new DocumentInfo(
+                        d.Id,
+                        d.Title,
+                        d.Category,
+                        d.RelativePath,
+                        (IReadOnlyList<string>)(d.Tags ?? new List<string>())))
+                    .ToList();
+
+                // Cache with 10-minute sliding expiration
+                _cache.Set(cacheKey, documents, new MemoryCacheEntryOptions
+                {
+                    SlidingExpiration = TimeSpan.FromMinutes(10)
+                });
+
+                return documents;
+            }
+        }
+        catch
+        {
+            // Index.json missing or invalid, fall back to traversal
+        }
+
+        // Fallback: traverse directory structure (existing logic)
+        var list = await LoadIndexViaDirTraversalAsync().ConfigureAwait(false);
+
+        // Cache the fallback result too
+        _cache.Set(cacheKey, list, new MemoryCacheEntryOptions
+        {
+            SlidingExpiration = TimeSpan.FromMinutes(10)
+        });
+
+        return list;
+    }
+
+    private async Task<IReadOnlyList<DocumentInfo>> LoadIndexViaDirTraversalAsync()
     {
         var list = new List<DocumentInfo>();
         await foreach (var file in EnumerateDocsAsync("docs").ConfigureAwait(false))
@@ -200,5 +266,21 @@ public sealed class GitHubDocumentCatalog : IDocumentCatalog, IAsyncDisposable
         public string Name { get; set; } = string.Empty;
         public string Path { get; set; } = string.Empty;
         public string Type { get; set; } = string.Empty; // "file" or "dir"
+    }
+
+    private sealed class DocumentIndexFile
+    {
+        public string Version { get; set; } = string.Empty;
+        public string Generated { get; set; } = string.Empty;
+        public List<DocumentIndexEntry> Documents { get; set; } = new();
+    }
+
+    private sealed class DocumentIndexEntry
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string RelativePath { get; set; } = string.Empty;
+        public List<string>? Tags { get; set; }
     }
 }
