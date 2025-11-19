@@ -1,3 +1,9 @@
+---
+title: "Minimal API Endpoint Organization"
+date: 2025-11-12
+status: Accepted
+tags: [api, minimal-api, structure, web]
+---
 # Structure: Minimal API Endpoint Organization
 Date: 2025-11-10
 Type: Project Structure Template
@@ -153,7 +159,7 @@ var group = app.MapGroup("/orders")
 - Mock handlers (see recommendation: Unit Testing with xUnit, Moq, Bogus) to test endpoint logic in isolation.
 
 ## References
-- ADR 0001: Adopt .NET 9
+- ADR 0001: Adopt .NET 10
 - ADR 0004: CQRS Recommendation for ASP.NET API
 - ADR 0005: Minimal APIs Over Controller-Based APIs
 - Recommendation: Unit Testing with xUnit, Moq, Bogus

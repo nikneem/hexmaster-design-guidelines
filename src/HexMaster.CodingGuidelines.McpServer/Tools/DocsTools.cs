@@ -11,7 +11,7 @@ public static class DocsTools
     [McpServerTool(Name = "list_docs"), Description("Lists all documentation with id, title and category.")]
     public static string ListDocs(IDocumentCatalog catalog)
     {
-        var docs = catalog.ListDocuments().Select(d => new { d.Id, d.Title, d.Category, d.RelativePath });
+        var docs = catalog.ListDocuments().Select(d => new { d.Id, d.Title, d.Category, d.RelativePath, d.Tags });
         return JsonSerializer.Serialize(docs);
     }
 
@@ -20,14 +20,21 @@ public static class DocsTools
     {
         var docs = catalog.ListDocuments()
             .Where(d => string.Equals(d.Category.Split('/')?.FirstOrDefault() ?? string.Empty, category, StringComparison.OrdinalIgnoreCase))
-            .Select(d => new { d.Id, d.Title, d.Category, d.RelativePath });
+            .Select(d => new { d.Id, d.Title, d.Category, d.RelativePath, d.Tags });
         return JsonSerializer.Serialize(docs);
     }
 
     [McpServerTool(Name = "search_docs"), Description("Searches documents by title/id/path (case-insensitive).")]
     public static string SearchDocs(IDocumentCatalog catalog, [Description("Search query")] string query)
     {
-        var docs = catalog.Search(query).Select(d => new { d.Id, d.Title, d.Category, d.RelativePath });
+        var docs = catalog.Search(query).Select(d => new { d.Id, d.Title, d.Category, d.RelativePath, d.Tags });
+        return JsonSerializer.Serialize(docs);
+    }
+
+    [McpServerTool(Name = "search_docs_by_tag"), Description("Search documents by tag.")]
+    public static string SearchDocsByTag(IDocumentCatalog catalog, [Description("Tag to filter by")] string tag)
+    {
+        var docs = catalog.SearchByTag(tag).Select(d => new { d.Id, d.Title, d.Category, d.RelativePath, d.Tags });
         return JsonSerializer.Serialize(docs);
     }
 

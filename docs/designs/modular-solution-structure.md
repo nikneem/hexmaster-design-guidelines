@@ -1,3 +1,9 @@
+---
+title: "Modular Solution Structure Design"
+date: 2025-11-12
+status: Accepted
+tags: [design, modular, architecture, aspire]
+---
 # Modular Solution Structure Design
 
 **Status**: Proposed  

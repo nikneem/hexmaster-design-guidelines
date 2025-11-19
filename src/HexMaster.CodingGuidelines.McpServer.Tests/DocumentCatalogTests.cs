@@ -74,7 +74,8 @@ public class DocumentCatalogTests
         var catalog = new FileSystemDocumentCatalog();
         var docs = catalog.ListDocuments();
         var firstDoc = docs.First();
-        var results = catalog.Search(firstDoc.Title.Substring(0, 5));
+        var length = Math.Min(5, firstDoc.Title.Length);
+        var results = catalog.Search(firstDoc.Title.Substring(0, length));
         Assert.NotEmpty(results);
     }
 
@@ -112,9 +113,9 @@ public class DocumentCatalogTests
     [Fact]
     public void DocumentInfo_RecordEquality_Works()
     {
-        var doc1 = new DocumentInfo("test-id", "Test Title", "category", "path/to/file.md");
-        var doc2 = new DocumentInfo("test-id", "Test Title", "category", "path/to/file.md");
-        var doc3 = new DocumentInfo("other-id", "Test Title", "category", "path/to/file.md");
+        var doc1 = new DocumentInfo("test-id", "Test Title", "category", "path/to/file.md", Array.Empty<string>());
+        var doc2 = new DocumentInfo("test-id", "Test Title", "category", "path/to/file.md", Array.Empty<string>());
+        var doc3 = new DocumentInfo("other-id", "Test Title", "category", "path/to/file.md", Array.Empty<string>());
 
         Assert.Equal(doc1, doc2);
         Assert.NotEqual(doc1, doc3);
@@ -123,7 +124,7 @@ public class DocumentCatalogTests
     [Fact]
     public void DocumentInfo_ToString_ContainsId()
     {
-        var doc = new DocumentInfo("test-id", "Test Title", "category", "path/to/file.md");
+        var doc = new DocumentInfo("test-id", "Test Title", "category", "path/to/file.md", new[] { "tag-a" });
         var str = doc.ToString();
         Assert.Contains("test-id", str);
     }
@@ -167,6 +168,15 @@ public class DocumentCatalogTests
         var catalog = new FileSystemDocumentCatalog("C:\\NonExistentPath\\Docs");
         var docs = catalog.ListDocuments();
         Assert.Empty(docs);
+    }
+
+    [Fact]
+    public void Search_ByTag_FindsExpected()
+    {
+        var catalog = new FileSystemDocumentCatalog();
+        var results = catalog.SearchByTag("dotnet");
+        Assert.NotEmpty(results);
+        Assert.Contains(results, r => r.Id.Contains("adopt-dotnet"));
     }
 
     private static string? FindDocsFolder()

@@ -2,12 +2,12 @@
 
 Design, architecture, style and structure guidelines for modern .NET (C#) projects, organized as ADRs, designs, recommendations and structures under `docs/`. An MCP Server in `src/` exposes these documents for tools/agents.
 
-## MCP Server (C#, .NET 9)
+## MCP Server (C#, .NET 10)
 
 An MCP (Model Context Protocol) server implementing the official Microsoft MCP SDK. Exposes design guideline documents as tools that AI assistants can call.
 
 ### Requirements
-- .NET 9 SDK
+- .NET 10 SDK
 
 ### MCP Protocol
 
@@ -165,7 +165,7 @@ dotnet tool install --global --add-source ./local-packages HexMaster.CodingGuide
 **Server doesn't appear in Copilot**
 - Check Output panel (View → Output) and select "MCP" from dropdown
 - Verify the command path is correct (use full path if needed)
-- Ensure .NET 9 SDK is installed: `dotnet --version`
+- Ensure .NET 10 SDK is installed: `dotnet --version`
 - Try restarting VS Code
 
 **Documents not loading**
@@ -205,7 +205,7 @@ src/
 ```
 
 ## ADRs
- - 0001: Adopt .NET 9 as Target Framework (Accepted)
+ - 0001: Adopt .NET 10 as Target Framework (Accepted)
  - 0002: Modular Monolith Project Structure (Proposed)
  - 0003: .NET Aspire Recommendation for ASP.NET Services (Proposed)
  - 0004: CQRS Recommendation for ASP.NET API (Proposed)
@@ -272,7 +272,7 @@ Published to NuGet.org:
 - **HexMaster.CodingGuidelines.McpServer** – MCP Server .NET global tool
 
 Package features:
-- .NET 9 global tool
+- .NET 10 global tool
 - Automatic document discovery from filesystem or GitHub
 - ModelContextProtocol SDK integration
 - MIT license
@@ -295,7 +295,7 @@ dotnet-gitversion
 ```
 
 ## Notes
-- All code and examples target `.NET 9`.
+- All code and examples target `.NET 10`.
 - The MCP Server uses the `FileSystemDocumentCatalog` for local development and `GitHubDocumentCatalog` for published scenarios.
 - Coverage threshold is enforced at 80% for core library code.
 - CI/CD pipeline only triggers on changes to `src/` folder when pushed to `main` branch.

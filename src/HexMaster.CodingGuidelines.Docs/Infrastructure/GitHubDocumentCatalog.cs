@@ -56,6 +56,13 @@ public sealed class GitHubDocumentCatalog : IDocumentCatalog, IAsyncDisposable
         return results;
     }
 
+    public IReadOnlyList<DocumentInfo> SearchByTag(string tag)
+    {
+        if (string.IsNullOrWhiteSpace(tag)) return Array.Empty<DocumentInfo>();
+        var all = _documents.Value.GetAwaiter().GetResult();
+        return all.Where(d => d.Tags.Any(t => string.Equals(t, tag, StringComparison.OrdinalIgnoreCase))).ToList();
+    }
+
     public async Task<string> GetContentAsync(string id, CancellationToken cancellationToken = default)
     {
         var all = await _documents.Value.ConfigureAwait(false);
@@ -80,12 +87,25 @@ public sealed class GitHubDocumentCatalog : IDocumentCatalog, IAsyncDisposable
                 ? file.name[..^3].Replace('-', ' ')
                 : file.name;
             var relative = file.path.Length > 5 ? file.path.Substring(5) : file.path; // strip leading "docs/"
-            var category = relative.Contains('/') ? relative[..relative.LastIndexOf('/')]: string.Empty;
+            var category = relative.Contains('/') ? relative[..relative.LastIndexOf('/')] : string.Empty;
             var id = GenerateId(relative);
-            list.Add(new DocumentInfo(id, title, category, relative.Replace('/', System.IO.Path.DirectorySeparatorChar)));
+            // Try to fetch the raw content to parse front matter for title and tags
+            string raw = string.Empty;
+            try
+            {
+                var rawUrl = $"https://raw.githubusercontent.com/{_owner}/{_repo}/{_branch}/docs/{relative}";
+                raw = await _http.GetStringAsync(rawUrl).ConfigureAwait(false);
+            }
+            catch
+            {
+                // ignore, fallback to title only
+            }
+            var (frontTitle, tags) = ParseFrontMatterForTitleAndTags(raw);
+            var finalTitle = frontTitle ?? title;
+            list.Add(new DocumentInfo(id, finalTitle, category, relative.Replace('/', System.IO.Path.DirectorySeparatorChar), tags));
         }
         // Stable ordering
-        list.Sort((a,b) => string.Compare(a.Category, b.Category, StringComparison.OrdinalIgnoreCase) switch
+        list.Sort((a, b) => string.Compare(a.Category, b.Category, StringComparison.OrdinalIgnoreCase) switch
         {
             0 => string.Compare(a.Title, b.Title, StringComparison.OrdinalIgnoreCase),
             var x => x
@@ -98,6 +118,50 @@ public sealed class GitHubDocumentCatalog : IDocumentCatalog, IAsyncDisposable
             .Replace(' ', '-')
             .Replace('_', '-')
             .ToLowerInvariant();
+
+    private static (string? Title, IReadOnlyList<string> Tags) ParseFrontMatterForTitleAndTags(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content) || !content.StartsWith("---")) return (null, Array.Empty<string>());
+        var end = content.IndexOf("\n---", StringComparison.Ordinal);
+        if (end < 0) return (null, Array.Empty<string>());
+        var block = content.Substring(3, end - 3).Trim();
+        string? title = null;
+        var tags = new List<string>();
+        bool inTagList = false;
+        foreach (var ln in block.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var line = ln.Trim();
+            if (line.StartsWith("title:", StringComparison.OrdinalIgnoreCase))
+            {
+                title = line.Substring(line.IndexOf(':') + 1).Trim().Trim('"');
+                continue;
+            }
+            if (line.StartsWith("tags:", StringComparison.OrdinalIgnoreCase))
+            {
+                var rest = line.Substring(line.IndexOf(':') + 1).Trim();
+                if (rest.StartsWith("["))
+                {
+                    rest = rest.Trim('[', ']');
+                    tags.AddRange(rest.Split(',').Select(s => s.Trim().Trim('"')).Where(s => s.Length > 0));
+                }
+                else
+                {
+                    inTagList = true;
+                }
+                continue;
+            }
+            if (inTagList)
+            {
+                if (line.StartsWith("- "))
+                {
+                    tags.Add(line.Substring(2).Trim().Trim('"'));
+                    continue;
+                }
+                inTagList = false;
+            }
+        }
+        return (title, tags);
+    }
 
     private async IAsyncEnumerable<(string name, string path)> EnumerateDocsAsync(string path)
     {

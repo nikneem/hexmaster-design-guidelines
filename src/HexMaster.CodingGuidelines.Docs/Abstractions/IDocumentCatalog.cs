@@ -23,6 +23,11 @@ public interface IDocumentCatalog
     /// Simple case-insensitive search over title and content.
     /// </summary>
     IReadOnlyList<DocumentInfo> Search(string query);
+
+    /// <summary>
+    /// Search documents by tag
+    /// </summary>
+    IReadOnlyList<DocumentInfo> SearchByTag(string tag);
 }
 
 /// <summary>
@@ -32,5 +37,6 @@ public sealed record DocumentInfo(
     string Id,
     string Title,
     string Category,
-    string RelativePath
+    string RelativePath,
+    IReadOnlyList<string> Tags
 );

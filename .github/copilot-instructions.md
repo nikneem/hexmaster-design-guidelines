@@ -6,7 +6,7 @@
 ## 1. Scope & Mission
 Use this repo as the single source of truth for:
 - Architectural principles (Hexagonal, DDD, Clean Architecture)
-- Coding standards for modern C# (.NET 9 or newest stable)
+- Coding standards for modern C# (.NET 10 or newest stable)
 - Project structuring & layering conventions
 - Decision history (ADRs) and rationale
 - Patterns to embrace and anti-patterns to avoid
@@ -85,7 +85,7 @@ Guidelines:
 ---
 ## 6. C# Coding Standards
 Style:
-- Target `.NET 9` (update via ADR when changed).
+- Target `.NET 10` (update via ADR when changed).
 - Enable nullable reference types; treat warnings as errors where practical.
 - File-scoped namespaces.
 - `var` only when RHS type is obvious.

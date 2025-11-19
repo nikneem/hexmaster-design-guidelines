@@ -1,6 +1,10 @@
+---
+title: "ADR 0003: Strong Recommendation to Adopt .NET Aspire for ASP.NET Web Services"
+date: 2025-11-10
+status: Accepted
+tags: [aspire, orchestration, adr, web, aspnet, hosting, orchestration]
+---
 # ADR 0003: Strong Recommendation to Adopt .NET Aspire for ASP.NET Web Services
-Date: 2025-11-10
-Status: Proposed
 
 ## Context
 Modern ASP.NET (APIs, Blazor, minimal APIs, background workers) routinely depend on multiple distributed resources: databases, caches, message brokers, AI services, and external HTTP endpoints. Teams repeatedly implement cross-cutting concerns (service discovery, telemetry, structured logging, health checks, resilience policies, configuration wiring) manually, leading to inconsistency, missed observability, and slower onboarding.
@@ -66,7 +70,7 @@ Review adoption annually or when significant Aspire version changes occur. Measu
 - External Article: "Introduction to .NET Aspire" (Visual Studio Magazine, Feb 19 2025)
 - Official Docs: https://docs.microsoft.com/dotnet/aspire
 - eShop reference app (Aspire sample)
-- ADR 0001 (.NET 9 baseline)
+- ADR 0001 (.NET 10 baseline)
 
 ## Status Rationale
 Marked Proposed pending validation in at least one multi-project ASP.NET solution. Upgrade to Accepted after initial integration demonstrates improved developer inner-loop productivity.

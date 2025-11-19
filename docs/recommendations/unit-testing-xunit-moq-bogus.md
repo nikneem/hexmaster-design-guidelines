@@ -1,9 +1,13 @@
+---
+title: "Unit testing with xUnit, Moq and Bogus"
+date: 2025-11-12
+status: Accepted
+tags: [testing, xunit, moq, bogus, unit-testing]
+---
 # Recommendation: Unit Testing with xUnit, Moq, and Bogus
-Date: 2025-11-10
-Status: Stable
-
+---
 ## Purpose
-Provide consistent, lightweight, and capable unit testing guidance for .NET 9 C# projects in this repository and projects following these guidelines.
+Provide consistent, lightweight, and capable unit testing guidance for .NET 10 C# projects in this repository and projects following these guidelines.
 
 ## Recommendation
 - Test framework: Use xUnit for all unit test projects.
@@ -21,7 +25,7 @@ Provide consistent, lightweight, and capable unit testing guidance for .NET 9 C#
 ## Usage Patterns
 
 ### Project setup (example)
-- Test project targets net9.0
+- Test project targets net10.0
 - References: Microsoft.NET.Test.Sdk, xunit, xunit.runner.visualstudio (PrivateAssets=all), coverlet.collector (PrivateAssets=all)
 - Optionally reference Moq and Bogus as needed by the tests.
 
@@ -77,7 +81,7 @@ repo.Setup(r => r.SaveAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()))
 If you need additional test libraries (snapshot testing, specialized generators, etc.), open an ADR or GitHub issue to request approval before adding the dependency. Include justification and impact.
 
 ## References
-- ADR 0001: Adopt .NET 9
+- ADR 0001: Adopt .NET 10
 - Testing Strategy in `.github/copilot-instructions.md`
 - Moq: https://github.com/moq/moq
 - Bogus: https://github.com/bchavez/Bogus

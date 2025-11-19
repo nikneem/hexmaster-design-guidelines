@@ -1,9 +1,13 @@
+---
+title: "ADR 0002: Modular Monolith Project Structure"
+date: 2025-11-10
+status: Accepted
+tags: [architecture, modular-monolith, adr, design, modularity, hexagonal]
+---
 # ADR 0002: Modular Monolith Project Structure
-Date: 2025-11-10
-Status: Proposed
 
 ## Context
-The repository aims to provide guidance for .NET 9 C# solutions employing Hexagonal / Clean Architecture while remaining maintainable and evolvable. Many teams start with a single project or a coarse set of layered projects (Domain, Application, Infrastructure). As functionality grows, unrelated domains/features can become tightly coupled, increasing build times, merge conflicts, and cognitive load. A full microservice split may be premature, introducing deployment, observability, and transactional complexity. We require a structure that enforces boundaries, supports independent evolution of domain modules, enables targeted testing, and keeps operational simplicity.
+The repository aims to provide guidance for .NET 10 C# solutions employing Hexagonal / Clean Architecture while remaining maintainable and evolvable. Many teams start with a single project or a coarse set of layered projects (Domain, Application, Infrastructure). As functionality grows, unrelated domains/features can become tightly coupled, increasing build times, merge conflicts, and cognitive load. A full microservice split may be premature, introducing deployment, observability, and transactional complexity. We require a structure that enforces boundaries, supports independent evolution of domain modules, enables targeted testing, and keeps operational simplicity.
 
 ## Decision
 Adopt a Modular Monolith physical project structure. Each domain/feature/module resides in its own folder and set of projects forming an internal boundary:
@@ -79,7 +83,7 @@ Neutral / Trade-offs:
 - Some duplication of simple DTOs until stability proven (preferred over premature centralization).
 
 ## References
-- ADR 0001 (Adopt .NET 9)
+- ADR 0001 (Adopt .NET 10)
 - Chris Richardson: Modular Monolith guidance (external)
 - Udi Dahan: Service boundaries (conceptual alignment)
 - ThoughtWorks Tech Radar: Evolutionary architecture principles

@@ -1,6 +1,10 @@
+---
+title: "ADR 0004: Recommendation to Implement CQRS for ASP.NET API Projects"
+date: 2025-11-10
+status: Accepted
+tags: [cqrs, patterns, adr, aspnet]
+---
 # ADR 0004: Recommendation to Implement CQRS for ASP.NET API Projects
-Date: 2025-11-10
-Status: Proposed
 
 ## Context
 ASP.NET API projects frequently mix request handling, validation, orchestration and domain logic inside controllers/endpoint lambdas, leading to low cohesion, hidden coupling, and hard-to-test code. We want a simple, consistent pattern that aligns with Hexagonal/Clean Architecture: HTTP endpoints are thin, application logic is encapsulated, and cross-module reuse is possible.
@@ -21,7 +25,7 @@ This pattern improves testability, boundaries, and vertical slice organization.
 - Handler outputs are DTO records suitable for serialization; do not expose domain entities directly.
 - For fire-and-forget or background-triggered work, use a Command with no return type and return 202 Accepted from the endpoint on success.
 
-### Minimal example (net9.0)
+### Minimal example (net10.0)
 
 ```csharp
 // Request payload (HTTP)
@@ -93,6 +97,6 @@ Negative/Trade-offs:
 - Requires discipline to avoid putting HTTP logic inside handlers.
 
 ## References
-- ADR 0001: Adopt .NET 9
+- ADR 0001: Adopt .NET 10
 - ADR 0002: Modular Monolith Project Structure
 - Hexagonal/Clean Architecture principles (ports/handlers decouple delivery from application logic)

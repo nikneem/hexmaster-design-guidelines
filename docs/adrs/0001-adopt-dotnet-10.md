@@ -1,6 +1,10 @@
+---
+title: "ADR 0001: Adopt .NET 10 as Target Framework"
+date: 2025-11-12
+status: Accepted
+tags: [dotnet, adr, framework, lts, runtime, csharp]
+---
 # ADR 0001: Adopt .NET 10 as Target Framework
-Date: 2025-11-12
-Status: Accepted
 
 ## Context
 The project requires a modern, stable and forward-looking runtime for implementing the MCP server and offering guidance for consumer projects. .NET 10, released on November 11, 2025, is the latest LTS (Long-Term Support) release providing performance improvements, language enhancements (C# 14 features), and updated base libraries with 3 years of support.
@@ -18,7 +22,7 @@ Positive:
 
 Negative:
 - Consumers limited to environments supporting .NET 10.
-- Migration required from .NET 9 for existing codebases.
+- Migration required for existing codebases (e.g., from .NET 9 to .NET 10).
 
 ## References
 - .NET 10 release notes (Microsoft docs)

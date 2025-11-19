@@ -1,18 +1,22 @@
+---
+title: "ADR 0005: Recommend Minimal APIs Over Controller-Based APIs"
+date: 2025-11-10
+status: Accepted
+tags: [minimal-apis, aspnet, adr, web]
+---
 # ADR 0005: Recommend Minimal APIs Over Controller-Based APIs
-Date: 2025-11-10
-Status: Proposed
 
 ## Context
 ASP.NET has historically supported two approaches for HTTP endpoint definition: Controller-based APIs (using `[ApiController]` and routing attributes) and Minimal APIs (introduced in .NET 6, matured in .NET 7-9). Controller-based APIs carry framework conventions (base classes, action filters, model binding attributes) that add overhead and ceremony. Minimal APIs offer a lighter, more explicit, and generally faster alternative.
 
-With .NET 9, Minimal APIs have feature parity with controller-based APIs (OpenAPI integration, parameter binding customization, filters, endpoint grouping). The ecosystem tooling and templates have converged around Minimal APIs as the default for new projects.
+With .NET 10, Minimal APIs have feature parity with controller-based APIs (OpenAPI integration, parameter binding customization, filters, endpoint grouping). The ecosystem tooling and templates have converged around Minimal APIs as the default for new projects.
 
 ## Decision
 We RECOMMEND using Minimal APIs for all NEW ASP.NET API projects (HTTP APIs, REST services, gRPC-JSON transcoding endpoints).
 
 - Minimal APIs are lightweight, more performant, and align with modern .NET idioms (top-level statements, DI-resolved lambdas).
 - They reduce indirection (no base controller class inheritance) and improve startup time.
-- OpenAPI/Swagger generation, validation, binding, filters, and authentication/authorization are fully supported as of .NET 9.
+- OpenAPI/Swagger generation, validation, binding, filters, and authentication/authorization are fully supported as of .NET 10.
 
 ### Legacy projects
 Projects historically created as controller-based APIs are ALLOWED to remain as-is. No mandatory migration is required. Incremental conversion to Minimal APIs is encouraged if refactoring occurs, but stability and team familiarity take priority over forced rewrites.
@@ -32,7 +36,7 @@ In all other scenarios, default to Minimal APIs.
 - Register endpoint filters (logging, telemetry, error handling) via `.AddEndpointFilter<T>()`.
 - Use `Results` static helper (`Results.Ok()`, `Results.NotFound()`, `Results.Accepted()`) for consistent HTTP responses.
 
-### Example (net9.0)
+### Example (net10.0)
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
@@ -61,7 +65,7 @@ app.Run();
 Positive:
 - Faster startup, lower memory footprint, reduced ceremony.
 - Explicit DI resolution; easier to reason about dependencies.
-- Aligns with .NET 9 defaults and Microsoft guidance.
+- Aligns with .NET 10 defaults and Microsoft guidance.
 - Simplified testing (test handlers directly without controller instantiation).
 
 Negative/Trade-offs:
@@ -80,7 +84,7 @@ If converting a controller-based API to Minimal APIs:
 - Test incrementally; consider running both patterns side-by-side during transition (use `/api/v1` controller prefix vs `/api/v2` minimal).
 
 ## References
-- ADR 0001: Adopt .NET 9
+- ADR 0001: Adopt .NET 10
 - ADR 0004: CQRS Recommendation for ASP.NET API
-- Microsoft Docs: Minimal APIs overview (.NET 9)
+- Microsoft Docs: Minimal APIs overview (.NET 10)
 - Performance benchmarks (Microsoft TechEmpower results show Minimal APIs outperform MVC controllers)

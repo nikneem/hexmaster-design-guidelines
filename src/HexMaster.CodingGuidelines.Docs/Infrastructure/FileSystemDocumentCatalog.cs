@@ -22,7 +22,7 @@ public sealed class FileSystemDocumentCatalog : IDocumentCatalog
     public FileSystemDocumentCatalog(string? root = null)
     {
         _root = root ?? ResolveDefaultRoot();
-        _documents = new Lazy<IReadOnlyList<DocumentInfo>>(Scan);    
+        _documents = new Lazy<IReadOnlyList<DocumentInfo>>(Scan);
     }
 
     private static string ResolveDefaultRoot()
@@ -68,6 +68,13 @@ public sealed class FileSystemDocumentCatalog : IDocumentCatalog
                   .ToList();
     }
 
+    public IReadOnlyList<DocumentInfo> SearchByTag(string tag)
+    {
+        if (string.IsNullOrWhiteSpace(tag)) return Array.Empty<DocumentInfo>();
+        var all = _documents.Value;
+        return all.Where(d => d.Tags.Any(t => string.Equals(t, tag, StringComparison.OrdinalIgnoreCase))).ToList();
+    }
+
     public async Task<string> GetContentAsync(string id, CancellationToken cancellationToken = default)
     {
         var doc = _documents.Value.FirstOrDefault(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
@@ -88,9 +95,10 @@ public sealed class FileSystemDocumentCatalog : IDocumentCatalog
             var rel = Path.GetRelativePath(_root, file);
             var category = Path.GetDirectoryName(rel)?.Replace("\\", "/") ?? string.Empty;
             var content = File.ReadAllText(file);
-            var title = TitleRegex.Match(content).Groups.Count > 1 ? TitleRegex.Match(content).Groups[1].Value.Trim() : Path.GetFileNameWithoutExtension(file);
+            var (frontTitle, tags) = ParseFrontMatterForTitleAndTags(content);
+            var title = frontTitle ?? (TitleRegex.Match(content).Groups.Count > 1 ? TitleRegex.Match(content).Groups[1].Value.Trim() : Path.GetFileNameWithoutExtension(file));
             var id = GenerateId(rel);
-            list.Add(new DocumentInfo(id, title, category, rel));
+            list.Add(new DocumentInfo(id, title, category, rel, tags));
         }
         return list.OrderBy(d => d.Category).ThenBy(d => d.Title).ToList();
     }
@@ -99,5 +107,54 @@ public sealed class FileSystemDocumentCatalog : IDocumentCatalog
     {
         var noExt = Path.GetFileNameWithoutExtension(relativePath);
         return noExt.Replace(' ', '-').Replace('_', '-').ToLowerInvariant();
+    }
+
+    private static (string? Title, IReadOnlyList<string> Tags) ParseFrontMatterForTitleAndTags(string content)
+    {
+        if (!content.StartsWith("---")) return (null, Array.Empty<string>());
+
+        var end = content.IndexOf("\n---", StringComparison.Ordinal);
+        if (end < 0) return (null, Array.Empty<string>());
+
+        var block = content.Substring(3, end - 3).Trim();
+        string? title = null;
+        var tags = new List<string>();
+        var lines = block.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+        bool inTagList = false;
+        foreach (var ln in lines)
+        {
+            var line = ln.Trim();
+            if (line.StartsWith("title:", StringComparison.OrdinalIgnoreCase))
+            {
+                title = line.Substring(line.IndexOf(':') + 1).Trim().Trim('"');
+                continue;
+            }
+            if (line.StartsWith("tags:", StringComparison.OrdinalIgnoreCase))
+            {
+                var rest = line.Substring(line.IndexOf(':') + 1).Trim();
+                if (rest.StartsWith("["))
+                {
+                    // inline list: [tag1, tag2]
+                    rest = rest.Trim('[', ']');
+                    tags.AddRange(rest.Split(',').Select(s => s.Trim().Trim('"')).Where(s => s.Length > 0));
+                }
+                else
+                {
+                    inTagList = true;
+                }
+                continue;
+            }
+            if (inTagList)
+            {
+                if (line.StartsWith("- "))
+                {
+                    tags.Add(line.Substring(2).Trim().Trim('"'));
+                    continue;
+                }
+                // end of list when not '- '
+                inTagList = false;
+            }
+        }
+        return (title, tags);
     }
 }

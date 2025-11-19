@@ -1,3 +1,9 @@
+---
+title: "Pragmatic Domain-Driven Design Approach"
+date: 2025-11-12
+status: Accepted
+tags: [ddd, domain-driven-design, value-objects, design]
+---
 # Pragmatic Domain-Driven Design Approach
 
 **Status**: Proposed  
