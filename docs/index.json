@@ -1,6 +1,6 @@
 {
     "version": "1.0",
-    "generated": "2025-11-19T00:00:00Z",
+    "generated": "2025-11-20T00:00:00Z",
     "documents": [
         {
             "id": "0001-adopt-dotnet-10",
@@ -64,6 +64,23 @@
                 "aspnet",
                 "adr",
                 "web"
+            ]
+        },
+        {
+            "id": "0006-centralized-frontend-styling-variables",
+            "title": "ADR 0006: Centralized Frontend Styling Variables",
+            "category": "adrs",
+            "relativePath": "adrs/0006-centralized-frontend-styling-variables.md",
+            "tags": [
+                "frontend",
+                "styling",
+                "sass",
+                "css",
+                "angular",
+                "react",
+                "vue",
+                "svelte",
+                "design-system"
             ]
         },
         {
