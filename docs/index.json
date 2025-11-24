@@ -1,6 +1,6 @@
 {
     "version": "1.0",
-    "generated": "2025-11-20T00:00:00Z",
+    "generated": "2025-11-24T00:00:00Z",
     "documents": [
         {
             "id": "0001-adopt-dotnet-10",
@@ -81,6 +81,19 @@
                 "vue",
                 "svelte",
                 "design-system"
+            ]
+        },
+        {
+            "id": "0007-vertical-slice-architecture",
+            "title": "ADR 0007: Adopt Vertical Slice Architecture for Feature Organization",
+            "category": "adrs",
+            "relativePath": "adrs/0007-vertical-slice-architecture.md",
+            "tags": [
+                "architecture",
+                "vertical-slice",
+                "feature-organization",
+                "adr",
+                "clean-architecture"
             ]
         },
         {
