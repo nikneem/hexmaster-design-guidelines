@@ -12,7 +12,7 @@ namespace HexMaster.CodingGuidelines.Docs.Infrastructure;
 
 /// <summary>
 /// Loads Markdown documents from the GitHub repository's docs/ folder.
-/// Prefers docs/index.json with 10-minute cache; falls back to directory traversal if index is missing.
+/// Prefers docs/index.json with 30-minute cache; falls back to directory traversal if index is missing.
 /// Default repo: nikneem/hexmaster-design-guidelines (branch: main).
 /// </summary>
 public sealed class GitHubDocumentCatalog : IDocumentCatalog, IAsyncDisposable
@@ -117,10 +117,10 @@ public sealed class GitHubDocumentCatalog : IDocumentCatalog, IAsyncDisposable
                         (IReadOnlyList<string>)(d.Tags ?? new List<string>())))
                     .ToList();
 
-                // Cache with 10-minute sliding expiration
+                // Cache with 30-minute absolute expiration
                 _cache.Set(cacheKey, documents, new MemoryCacheEntryOptions
                 {
-                    SlidingExpiration = TimeSpan.FromMinutes(10)
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
                 });
 
                 return documents;
@@ -137,7 +137,7 @@ public sealed class GitHubDocumentCatalog : IDocumentCatalog, IAsyncDisposable
         // Cache the fallback result too
         _cache.Set(cacheKey, list, new MemoryCacheEntryOptions
         {
-            SlidingExpiration = TimeSpan.FromMinutes(10)
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
         });
 
         return list;
