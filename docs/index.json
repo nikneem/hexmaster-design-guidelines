@@ -1,6 +1,6 @@
 {
     "version": "1.0",
-    "generated": "2025-11-24T00:00:00Z",
+    "generated": "2025-11-26T00:00:00Z",
     "documents": [
         {
             "id": "0001-adopt-dotnet-10",
@@ -94,6 +94,22 @@
                 "feature-organization",
                 "adr",
                 "clean-architecture"
+            ]
+        },
+        {
+            "id": "0008-adopt-opentelemetry-for-observability",
+            "title": "ADR 0008: Adopt OpenTelemetry for Comprehensive Observability",
+            "category": "adrs",
+            "relativePath": "adrs/0008-adopt-opentelemetry-for-observability.md",
+            "tags": [
+                "opentelemetry",
+                "observability",
+                "telemetry",
+                "metrics",
+                "tracing",
+                "logging",
+                "adr",
+                "backend"
             ]
         },
         {
