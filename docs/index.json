@@ -1,6 +1,6 @@
 {
     "version": "1.0",
-    "generated": "2025-11-26T00:00:00Z",
+    "generated": "2026-04-07T19:26:51Z",
     "documents": [
         {
             "id": "0001-adopt-dotnet-10",
@@ -159,6 +159,36 @@
                 "minimal-api",
                 "structure",
                 "web"
+            ]
+        },
+        {
+            "id": "0009-feature-slices-module-structure",
+            "title": "ADR 0009: Feature Slices Within Module Projects",
+            "category": "adrs",
+            "relativePath": "adrs/0009-feature-slices-module-structure.md",
+            "tags": [
+                "architecture",
+                "feature-slices",
+                "modules",
+                "cqrs",
+                "minimal-api",
+                "adr",
+                "modular-monolith"
+            ]
+        },
+        {
+            "id": "feature-slices-module-structure",
+            "title": "Feature Slices Module Structure",
+            "category": "structures",
+            "relativePath": "structures/feature-slices-module-structure.md",
+            "tags": [
+                "feature-slices",
+                "modules",
+                "cqrs",
+                "minimal-api",
+                "structure",
+                "modular-monolith",
+                "abstractions"
             ]
         }
     ]
