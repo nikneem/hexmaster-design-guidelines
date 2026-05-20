@@ -56,7 +56,7 @@ src/
       Namespace.XYZ.Orders.csproj
 
     Namespace.XYZ.Orders.Abstractions/                ← Module Abstractions project
-      Dtos/
+      DataTransferObjects/
         CreateOrderRequest.cs
         OrderDto.cs
         OrderLineRequest.cs
@@ -99,20 +99,20 @@ src/
 
 ### Abstractions Project: DTO records
 
-All types exchanged with the outside world (API payloads, responses, integration events) are C# `record` types under `Dtos`:
+All types exchanged with the outside world (API payloads, responses, integration events) are C# `record` types under `DataTransferObjects`:
 
-**`Dtos/CreateOrderRequest.cs`**
+**`DataTransferObjects/CreateOrderRequest.cs`**
 ```csharp
-namespace Namespace.XYZ.Orders.Abstractions.Dtos;
+namespace Namespace.XYZ.Orders.Abstractions.DataTransferObjects;
 
 public sealed record CreateOrderRequest(Guid CustomerId, IReadOnlyList<OrderLineRequest> Lines);
 
 public sealed record OrderLineRequest(Guid ProductId, int Quantity, decimal UnitPrice);
 ```
 
-**`Dtos/OrderDto.cs`**
+**`DataTransferObjects/OrderDto.cs`**
 ```csharp
-namespace Namespace.XYZ.Orders.Abstractions.Dtos;
+namespace Namespace.XYZ.Orders.Abstractions.DataTransferObjects;
 
 public sealed record OrderDto(
     Guid Id,
@@ -134,7 +134,7 @@ Each feature lives in its own namespace under `Features`:
 ```csharp
 namespace Namespace.XYZ.Orders.Features.CreateOrder;
 
-using Namespace.XYZ.Orders.Abstractions.Dtos;
+using Namespace.XYZ.Orders.Abstractions.DataTransferObjects;
 
 public sealed record CreateOrderCommand(Guid CustomerId, IReadOnlyList<OrderLineDto> Lines);
 
@@ -208,7 +208,7 @@ public sealed class DeleteOrderCommandHandler : ICommandHandler<DeleteOrderComma
 ```csharp
 namespace Namespace.XYZ.Orders.Features.GetOrderById;
 
-using Namespace.XYZ.Orders.Abstractions.Dtos;
+using Namespace.XYZ.Orders.Abstractions.DataTransferObjects;
 
 public sealed record GetOrderByIdQuery(Guid OrderId);
 ```
@@ -217,7 +217,7 @@ public sealed record GetOrderByIdQuery(Guid OrderId);
 ```csharp
 namespace Namespace.XYZ.Orders.Features.GetOrderById;
 
-using Namespace.XYZ.Orders.Abstractions.Dtos;
+using Namespace.XYZ.Orders.Abstractions.DataTransferObjects;
 
 public sealed class GetOrderByIdQueryHandler : IQueryHandler<GetOrderByIdQuery, OrderDto?>
 {
@@ -254,7 +254,7 @@ namespace Namespace.XYZ.Orders;
 using Namespace.XYZ.Orders.Features.CreateOrder;
 using Namespace.XYZ.Orders.Features.DeleteOrder;
 using Namespace.XYZ.Orders.Features.GetOrderById;
-using Namespace.XYZ.Orders.Abstractions.Dtos;
+using Namespace.XYZ.Orders.Abstractions.DataTransferObjects;
 
 public static class OrdersModuleRegistration
 {
@@ -281,7 +281,7 @@ Each module has its own API project (`Namespace.XYZ.Orders.Api`). The endpoint c
 ```csharp
 namespace Namespace.XYZ.Orders.Api.Endpoints;
 
-using Namespace.XYZ.Orders.Abstractions.Dtos;
+using Namespace.XYZ.Orders.Abstractions.DataTransferObjects;
 using Namespace.XYZ.Orders.Features.CreateOrder;
 using Namespace.XYZ.Orders.Features.DeleteOrder;
 using Namespace.XYZ.Orders.Features.GetOrderById;
@@ -372,7 +372,7 @@ app.Run();
 | Module abstractions project | `Namespace.XYZ.{ModuleName}.Abstractions` | `HexMaster.Orders.Abstractions` |
 | Module API project | `Namespace.XYZ.{ModuleName}.Api` | `HexMaster.Orders.Api` |
 | Module test project | `Namespace.XYZ.{ModuleName}.Tests` | `HexMaster.Orders.Tests` |
-| DTO namespace | `Namespace.XYZ.{ModuleName}.Abstractions.Dtos` | `HexMaster.Orders.Abstractions.Dtos` |
+| DTO namespace | `Namespace.XYZ.{ModuleName}.Abstractions.DataTransferObjects` | `HexMaster.Orders.Abstractions.DataTransferObjects` |
 | Repository interface | `I{Entity}Repository` at module project root | `IOrderRepository` |
 | Feature namespace | `Namespace.XYZ.{ModuleName}.Features.{FeatureName}` | `HexMaster.Orders.Features.CreateOrder` |
 | Command record | `{FeatureName}Command` | `CreateOrderCommand` |
