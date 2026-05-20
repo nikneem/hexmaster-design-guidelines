@@ -91,8 +91,8 @@ HexMaster.Webshop/
 **When to use**: Projects exposing HTTP endpoints (Web APIs, Web Apps, gRPC services)
 
 **Contents**:
-- **`Company.Product.AppHost`**: Aspire orchestration project that defines service topology, dependencies, and local development environment
-- **`Company.Product.ServiceDefaults`**: Shared configurations for observability, health checks, service discovery, and common middleware
+- **`Company.Product.Aspire.AppHost`**: Aspire orchestration project that defines service topology, dependencies, and local development environment
+- **`Company.Product.Aspire.ServiceDefaults`**: Shared configurations for observability, health checks, service discovery, and common middleware
 
 **Purpose**: Centralizes distributed application orchestration and shared service configurations.
 
@@ -435,8 +435,8 @@ Use solution folders to organize projects:
 Solution 'HexMaster.Webshop'
 ├── src
 │   ├── Aspire
-│   │   ├── HexMaster.Webshop.AppHost
-│   │   └── HexMaster.Webshop.ServiceDefaults
+│   │   ├── HexMaster.Webshop.Aspire.AppHost
+│   │   └── HexMaster.Webshop.Aspire.ServiceDefaults
 │   ├── Inventory
 │   │   ├── HexMaster.Webshop.Inventory
 │   │   ├── HexMaster.Webshop.Inventory.Abstractions
@@ -488,8 +488,8 @@ Place at solution root to enforce consistency:
 Contoso.Shop/
 ├── src/
 │   ├── Aspire/
-│   │   ├── Contoso.Shop.AppHost/
-│   │   └── Contoso.Shop.ServiceDefaults/
+│   │   ├── Contoso.Shop.Aspire.AppHost/
+│   │   └── Contoso.Shop.Aspire.ServiceDefaults/
 │   ├── Catalog/
 │   │   ├── Contoso.Shop.Catalog/
 │   │   ├── Contoso.Shop.Catalog.Abstractions/
@@ -509,8 +509,8 @@ Contoso.Shop/
 Contoso.Ecommerce/
 ├── src/
 │   ├── Aspire/
-│   │   ├── Contoso.Ecommerce.AppHost/
-│   │   └── Contoso.Ecommerce.ServiceDefaults/
+│   │   ├── Contoso.Ecommerce.Aspire.AppHost/
+│   │   └── Contoso.Ecommerce.Aspire.ServiceDefaults/
 │   ├── Catalog/
 │   │   ├── Contoso.Ecommerce.Catalog/
 │   │   ├── Contoso.Ecommerce.Catalog.Abstractions/
