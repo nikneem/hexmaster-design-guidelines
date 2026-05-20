@@ -105,10 +105,67 @@ This is the recommended approach for general use. Documents are automatically fe
 
 **How it works**: When installed as a global tool, the server automatically fetches documents from the GitHub repository (`https://github.com/nikneem/hexmaster-design-guidelines`). No local clone is required, and you'll always get the latest published content from the `main` branch.
 
+**Update**:
+```bash
+dotnet tool update --global HexMaster.CodingGuidelines.McpServer
+```
+
 **Uninstall**:
 ```bash
 dotnet tool uninstall --global HexMaster.CodingGuidelines.McpServer
 ```
+
+---
+
+#### Scenario 1b: GitHub Copilot CLI Setup
+
+Copilot CLI reads `.mcp.json` from your project root automatically. This repo ships a ready-to-use `.mcp.json` — you only need to install the global tool first.
+
+1. **Install the package** (if not already installed):
+   ```bash
+   dotnet tool install --global HexMaster.CodingGuidelines.McpServer
+   ```
+
+2. **Copy `.mcp.json` to your project root** (or add the server entry to an existing `.mcp.json`):
+   ```json
+   {
+     "mcpServers": {
+       "hexmaster-design-guidelines": {
+         "type": "stdio",
+         "command": "hexmaster-codingguidelines-mcpserver",
+         "args": [],
+         "tools": ["*"]
+       }
+     }
+   }
+   ```
+
+3. **Start Copilot CLI** in your project folder:
+   ```bash
+   copilot
+   ```
+   The MCP server is picked up automatically — no restart needed.
+
+4. **Verify** by running `/mcp show hexmaster-design-guidelines` inside the CLI session.
+
+**Alternatively**, add the server at the user level (available in all projects):
+```bash
+# Inside a Copilot CLI session
+/mcp add
+```
+Follow the prompts: type `stdio`, command `hexmaster-codingguidelines-mcpserver`, tools `*`.
+
+**Update**:
+```bash
+dotnet tool update --global HexMaster.CodingGuidelines.McpServer
+```
+Then inside an active Copilot CLI session, run `/mcp show` to confirm the updated server version is loaded.
+
+**Uninstall**:
+```bash
+dotnet tool uninstall --global HexMaster.CodingGuidelines.McpServer
+```
+Then remove the entry from `.mcp.json` or run `/mcp delete hexmaster-design-guidelines` inside a Copilot CLI session to remove the user-level entry.
 
 ---
 
