@@ -121,7 +121,7 @@ app.Run();
 - Avoid business logic inside endpoint lambdas; keep them pure routing/binding/result mapping.
 
 ### Metadata and OpenAPI
-- Use `.WithTags()` for grouping in Swagger UI.
+- Use `.WithTags()` for grouping in the Scalar/OpenAPI UI.
 - Use `.WithOpenApi()` or explicit `.WithName()` / `.WithDescription()` for documentation.
 - Apply `.RequireAuthorization()` at group or individual endpoint level as needed.
 
