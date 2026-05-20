@@ -1,6 +1,6 @@
 {
     "version": "1.0",
-    "generated": "2026-05-20T08:58:00Z",
+    "generated": "2026-05-25T10:00:00Z",
     "documents": [
         {
             "id": "0001-adopt-dotnet-10",
@@ -61,7 +61,7 @@
         {
             "id": "0005-minimal-apis-over-controllers",
             "title": "ADR 0005: Recommend Minimal APIs Over Controller-Based APIs",
-            "description": "Mandates ASP.NET Core Minimal APIs with endpoint classes (not controllers). Covers MapGroup, endpoint naming, OpenAPI via Scalar, and how thin endpoints delegate directly to CQRS handlers.",
+            "description": "Mandates ASP.NET Core Minimal APIs with endpoint classes (not controllers). Covers MapGroup, endpoint naming, native ASP.NET 10 OpenAPI (AddOpenApi/MapOpenApi), Scalar as the API UI, shallow endpoint-filter validation, and how thin endpoints delegate to CQRS handlers.",
             "category": "adrs",
             "relativePath": "adrs/0005-minimal-apis-over-controllers.md",
             "tags": [
@@ -92,7 +92,7 @@
         {
             "id": "0007-vertical-slice-architecture",
             "title": "ADR 0007: Adopt Vertical Slice Architecture for Feature Organization",
-            "description": "Requires organizing features as vertical slices: each use case gets its own folder with command/query, handler, and validator. DTOs go in the .Abstractions project (Dtos/); tests go in a separate .Tests project. Superseded in physical layout detail by ADR 0009.",
+            "description": "Requires organizing features as vertical slices: each use case gets its own folder with command/query, handler, and endpoint filter for shallow validation. DTOs go in the .Abstractions project (DataTransferObjects/); domain model enforces business invariants. Tests go in a separate .Tests project. Superseded in physical layout detail by ADR 0009.",
             "category": "adrs",
             "relativePath": "adrs/0007-vertical-slice-architecture.md",
             "tags": [
@@ -123,7 +123,7 @@
         {
             "id": "0009-feature-slices-module-structure",
             "title": "ADR 0009: Feature Slices Within Module Projects",
-            "description": "Authoritative physical layout for a module project: DomainModels/, Features/{Feature}CommandHandler, IXxxRepository at module root, Observability/, Services/, Extensions/, and module registration. Supersedes ADR 0007 for project-level structure.",
+            "description": "Authoritative physical layout for a module project: DomainModels/, Features/{Feature}CommandHandler, IXxxRepository at module root, Observability/, Services/, Extensions/, module registration. DTOs in Abstractions/DataTransferObjects/. Supersedes ADR 0007 for project-level structure.",
             "category": "adrs",
             "relativePath": "adrs/0009-feature-slices-module-structure.md",
             "tags": [
@@ -192,7 +192,7 @@
         {
             "id": "feature-slices-module-structure",
             "title": "Feature Slices Module Structure",
-            "description": "Copy-paste scaffold for a complete module: full folder tree (DomainModels/, Features/, Observability/, Services/, Extensions/), Abstractions project with Dtos/, Api project with Program.cs wiring, Data project, and Tests project with Moq/xUnit examples.",
+            "description": "Copy-paste scaffold for a complete module: full folder tree (DomainModels/, Features/, Observability/, Services/, Extensions/), Abstractions project with DataTransferObjects/, Api project with Program.cs wiring (AddOpenApi/MapScalarApiReference), Data project, and Tests project with Moq/xUnit examples.",
             "category": "structures",
             "relativePath": "structures/feature-slices-module-structure.md",
             "tags": [
