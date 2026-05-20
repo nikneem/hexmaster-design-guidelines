@@ -65,6 +65,7 @@ public sealed class FileSystemDocumentCatalog : IDocumentCatalog
         query = query.Trim();
         var all = _documents.Value;
         return all.Where(d => d.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                               d.Description.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                                File.ReadAllText(Path.Combine(_root, d.RelativePath)).Contains(query, StringComparison.OrdinalIgnoreCase))
                   .Take(50)
                   .ToList();
@@ -109,6 +110,7 @@ public sealed class FileSystemDocumentCatalog : IDocumentCatalog
                         .Select(d => new DocumentInfo(
                             d.Id,
                             d.Title,
+                            d.Description ?? string.Empty,
                             d.Category,
                             d.RelativePath,
                             (IReadOnlyList<string>)(d.Tags ?? new List<string>())))
@@ -137,7 +139,7 @@ public sealed class FileSystemDocumentCatalog : IDocumentCatalog
             var (frontTitle, tags) = ParseFrontMatterForTitleAndTags(content);
             var title = frontTitle ?? (TitleRegex.Match(content).Groups.Count > 1 ? TitleRegex.Match(content).Groups[1].Value.Trim() : Path.GetFileNameWithoutExtension(file));
             var id = GenerateId(rel);
-            list.Add(new DocumentInfo(id, title, category, rel, tags));
+            list.Add(new DocumentInfo(id, title, string.Empty, category, rel, tags));
         }
         return list.OrderBy(d => d.Category).ThenBy(d => d.Title).ToList();
     }
@@ -208,6 +210,7 @@ public sealed class FileSystemDocumentCatalog : IDocumentCatalog
     {
         public string Id { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
         public string RelativePath { get; set; } = string.Empty;
         public List<string>? Tags { get; set; }

@@ -36,6 +36,7 @@ public interface IDocumentCatalog
 public sealed record DocumentInfo(
     string Id,
     string Title,
+    string Description,
     string Category,
     string RelativePath,
     IReadOnlyList<string> Tags

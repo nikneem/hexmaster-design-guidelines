@@ -113,9 +113,9 @@ public class DocumentCatalogTests
     [Fact]
     public void DocumentInfo_RecordEquality_Works()
     {
-        var doc1 = new DocumentInfo("test-id", "Test Title", "category", "path/to/file.md", Array.Empty<string>());
-        var doc2 = new DocumentInfo("test-id", "Test Title", "category", "path/to/file.md", Array.Empty<string>());
-        var doc3 = new DocumentInfo("other-id", "Test Title", "category", "path/to/file.md", Array.Empty<string>());
+        var doc1 = new DocumentInfo("test-id", "Test Title", string.Empty, "category", "path/to/file.md", Array.Empty<string>());
+        var doc2 = new DocumentInfo("test-id", "Test Title", string.Empty, "category", "path/to/file.md", Array.Empty<string>());
+        var doc3 = new DocumentInfo("other-id", "Test Title", string.Empty, "category", "path/to/file.md", Array.Empty<string>());
 
         Assert.Equal(doc1, doc2);
         Assert.NotEqual(doc1, doc3);
@@ -124,7 +124,7 @@ public class DocumentCatalogTests
     [Fact]
     public void DocumentInfo_ToString_ContainsId()
     {
-        var doc = new DocumentInfo("test-id", "Test Title", "category", "path/to/file.md", new[] { "tag-a" });
+        var doc = new DocumentInfo("test-id", "Test Title", string.Empty, "category", "path/to/file.md", new[] { "tag-a" });
         var str = doc.ToString();
         Assert.Contains("test-id", str);
     }
