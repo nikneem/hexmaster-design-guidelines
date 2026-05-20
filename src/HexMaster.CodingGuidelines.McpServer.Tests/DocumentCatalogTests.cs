@@ -23,7 +23,7 @@ public class DocumentCatalogTests
     {
         var catalog = new FileSystemDocumentCatalog();
         var id = catalog.ListDocuments().First().Id;
-        var content = await catalog.GetContentAsync(id);
+        var content = await catalog.GetContentAsync(id, TestContext.Current.CancellationToken);
         Assert.False(string.IsNullOrWhiteSpace(content));
         Assert.Contains("#", content);
     }
@@ -84,7 +84,7 @@ public class DocumentCatalogTests
     {
         var catalog = new FileSystemDocumentCatalog();
         await Assert.ThrowsAsync<System.IO.FileNotFoundException>(
-            async () => await catalog.GetContentAsync("non-existent-id"));
+            async () => await catalog.GetContentAsync("non-existent-id", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -137,7 +137,7 @@ public class DocumentCatalogTests
 
         foreach (var doc in docs)
         {
-            var content = await catalog.GetContentAsync(doc.Id);
+            var content = await catalog.GetContentAsync(doc.Id, TestContext.Current.CancellationToken);
             Assert.False(string.IsNullOrWhiteSpace(content));
         }
     }
