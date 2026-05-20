@@ -123,18 +123,26 @@ public sealed class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Cre
 ```
 
 #### 2. Request/Response Models
-Use C# records for immutability and expressiveness:
+Use C# records for immutability and expressiveness.
+
+**DTOs belong in the `.Abstractions` project** (`Dtos/` folder). This keeps contracts consumable by other modules and the API project without creating coupling to the module implementation. Commands, queries, and result types that are internal to a single handler may live inside the feature slice.
 
 ```csharp
-namespace ProjectName.Application.Orders.CreateOrder;
+// ProjectName.Orders.Abstractions / Dtos /
+namespace ProjectName.Orders.Abstractions.Dtos;
 
-// Input DTO (from HTTP body)
 public sealed record OrderLineDto(Guid ProductId, int Quantity, decimal UnitPrice);
+public sealed record OrderDto(Guid OrderId, decimal Total, DateTimeOffset CreatedAt);
+```
 
-// Command (internal application model)
+```csharp
+// ProjectName.Orders / Features / CreateOrder /
+namespace ProjectName.Orders.Features.CreateOrder;
+
+// Command — internal to the module
 public sealed record CreateOrderCommand(Guid CustomerId, IReadOnlyList<OrderLineDto> Lines);
 
-// Result DTO (serialized to HTTP response)
+// Result — returned to the API layer; use an Abstractions DTO if shared across modules
 public sealed record CreateOrderResult(Guid OrderId, decimal Total, DateTimeOffset CreatedAt);
 ```
 
@@ -288,15 +296,15 @@ public sealed class CreateOrderCommandHandlerTests
 ### Shared Code Guidelines
 
 #### When to Share Across Slices
-- **Abstractions/Ports**: `IRepository<T>`, `IUnitOfWork`, `IClock`, `IEmailSender` → `_Common/` folder.
-- **Domain entities**: Shared across slices via domain layer (e.g., `Order`, `Customer`).
-- **DTOs used by multiple slices**: Place in `_Shared/` subfolder within the relevant module (e.g., `Orders/_Shared/OrderLineDto.cs`).
-- **Cross-cutting concerns**: Logging, exception handling, authorization → middleware or base classes in `_Common/`.
+- **Abstractions/Ports**: `IRepository<T>`, `IUnitOfWork`, `IClock`, `IEmailSender` → module root or `Core/` project.
+- **DTOs (Data Transfer Objects)**: All DTOs go in the `.Abstractions` project under `Dtos/`. This makes them available to API projects and other modules without coupling to the implementation.
+- **Domain entities**: Shared across slices via `DomainModels/` in the module project.
+- **Cross-cutting concerns**: Logging, exception handling, authorization → middleware or base classes in `Core/`.
 
 #### When NOT to Share
 - **Handler logic**: Each slice has its own handler; avoid "helper" handlers.
 - **Validation rules**: Slice-specific validation stays within the slice.
-- **Slice-specific DTOs**: `CreateOrderResult` is not shared; `GetOrderByIdQuery` defines its own `OrderDetailDto` if structure differs.
+- **Slice-specific result types**: `CreateOrderResult` used only by its handler can stay in the feature folder; promote to `Abstractions/Dtos/` once consumed by another module or the API project.
 
 ### Mediator Libraries (Optional)
 Vertical slices work with or without mediator libraries (e.g., MediatR):
