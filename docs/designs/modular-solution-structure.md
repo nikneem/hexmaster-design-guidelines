@@ -6,7 +6,7 @@ tags: [design, modular, architecture, aspire]
 ---
 # Modular Solution Structure Design
 
-**Status**: Proposed  
+**Status**: Accepted  
 **Date**: 2025-11-12  
 **Author**: Design Guidelines Team
 
@@ -32,18 +32,19 @@ Without clear structure, solutions become difficult to navigate, maintain, and s
 ```
 solution-root/
 ├── src/
+│   ├── App/                                       # Frontend application (Angular, Blazor, React)
 │   ├── Aspire/                                    # Orchestration projects (web-enabled only)
-│   │   ├── Company.Product.AppHost/
-│   │   └── Company.Product.ServiceDefaults/
-│   ├── ModuleName/                                # Domain/Module folders
+│   │   ├── Company.Product.Aspire.AppHost/
+│   │   └── Company.Product.Aspire.ServiceDefaults/
+│   ├── Core/                                      # Shared CQRS interfaces (ICommandHandler, IQueryHandler, IClock)
+│   ├── ModuleName/                                # Domain/Module folders (short name: Orders, Conferences)
 │   │   ├── Company.Product.ModuleName/
 │   │   ├── Company.Product.ModuleName.Abstractions/
+│   │   ├── Company.Product.ModuleName.Api/        # Every web-exposed module has its own API
 │   │   ├── Company.Product.ModuleName.Data.{StorageType}/
-│   │   ├── Company.Product.ModuleName.Api/        # Optional: Independent API
 │   │   └── Company.Product.ModuleName.Tests/
-│   └── SharedKernel/                              # Optional: Cross-cutting concerns
-│       ├── Company.Product.SharedKernel/
-│       └── Company.Product.SharedKernel.Abstractions/
+│   └── Shared/                                    # Optional: Cross-module integration events
+│       └── Company.Product.IntegrationEvents/
 ├── tests/                                         # Optional: Integration/E2E tests
 │   └── Company.Product.IntegrationTests/
 └── Company.Product.sln
@@ -56,23 +57,28 @@ For a product called "Webshop" by company "HexMaster" with Inventory, Users, and
 ```
 HexMaster.Webshop/
 ├── src/
+│   ├── App/                                           (Angular / Blazor frontend)
 │   ├── Aspire/
-│   │   ├── HexMaster.Webshop.AppHost/
-│   │   └── HexMaster.Webshop.ServiceDefaults/
+│   │   ├── HexMaster.Webshop.Aspire.AppHost/
+│   │   └── HexMaster.Webshop.Aspire.ServiceDefaults/
+│   ├── Core/
+│   │   └── HexMaster.Webshop.Core/                    (ICommandHandler, IQueryHandler, IClock)
 │   ├── Inventory/
 │   │   ├── HexMaster.Webshop.Inventory/
 │   │   ├── HexMaster.Webshop.Inventory.Abstractions/
+│   │   ├── HexMaster.Webshop.Inventory.Api/
 │   │   ├── HexMaster.Webshop.Inventory.Data.SqlServer/
 │   │   └── HexMaster.Webshop.Inventory.Tests/
 │   ├── Users/
 │   │   ├── HexMaster.Webshop.Users/
 │   │   ├── HexMaster.Webshop.Users.Abstractions/
-│   │   ├── HexMaster.Webshop.Users.Data.CosmosDb/
 │   │   ├── HexMaster.Webshop.Users.Api/
+│   │   ├── HexMaster.Webshop.Users.Data.CosmosDb/
 │   │   └── HexMaster.Webshop.Users.Tests/
 │   └── Catalog/
 │       ├── HexMaster.Webshop.Catalog/
 │       ├── HexMaster.Webshop.Catalog.Abstractions/
+│       ├── HexMaster.Webshop.Catalog.Api/
 │       ├── HexMaster.Webshop.Catalog.Data.MongoDb/
 │       └── HexMaster.Webshop.Catalog.Tests/
 └── HexMaster.Webshop.sln
@@ -237,7 +243,7 @@ public class PersonServiceTests
     public async Task CreatePerson_WithValidData_ReturnsPersonId()
     {
         // Arrange
-        var repository = Substitute.For<IPersonRepository>();
+        var repository = new Mock<IPersonRepository>().Object;
         var service = new PersonService(repository);
         var dto = new PersonDto(Guid.Empty, "John", "Doe", "john@example.com");
         
@@ -250,24 +256,16 @@ public class PersonServiceTests
 }
 ```
 
-#### Independent API: `Company.Product.ModuleName.Api` (Optional)
+#### Per-Module API: `Company.Product.ModuleName.Api`
 
-**When to use**: Module should be deployable as independent service
-
-**Purpose**: Provides HTTP/gRPC API for the module
+**Purpose**: Every web-exposed module has its own independently deployable API project.
 
 **Contents**:
-- Minimal API endpoints or controllers
-- API-specific middleware
-- Swagger/OpenAPI configuration
-- Health checks
+- Minimal API endpoints
+- Authorization policies
+- Background services
+- OpenAPI/Scalar configuration
 - Program.cs
-
-**Characteristics of independent module**:
-- Can be deployed separately
-- Has its own database/storage
-- Communicates with other modules via events or HTTP
-- Fully autonomous lifecycle
 
 **Example structure**:
 ```
@@ -275,10 +273,24 @@ HexMaster.Webshop.Users.Api/
 ├── Endpoints/
 │   ├── UserEndpoints.cs
 │   └── AuthEndpoints.cs
-├── Middleware/
-│   └── ApiKeyMiddleware.cs
+├── Authorization/
+│   └── UserAuthorizationHandler.cs
 ├── Program.cs
 └── appsettings.json
+```
+
+**Program.cs** wires Aspire service defaults and the module:
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
+builder.Services.AddUsersModule(builder.Configuration);
+builder.Services.AddOpenApi();
+
+var app = builder.Build();
+app.MapDefaultEndpoints();
+app.MapUserEndpoints();
+app.MapOpenApi();
+app.Run();
 ```
 
 **Example endpoint**:
