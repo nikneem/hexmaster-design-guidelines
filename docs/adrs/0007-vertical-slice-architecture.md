@@ -33,85 +33,40 @@ We REQUIRE organizing application code using **Vertical Slice Architecture** for
 
 ### Project Structure
 
+> **Note**: For modular-monolith projects, refer to **ADR 0009** for the authoritative physical project layout. The structure below illustrates the vertical-slice principle; actual folder names follow ADR 0009 conventions (`DomainModels/` not `Domain/`, `Features/` with `{Feature}CommandHandler` naming, tests in separate `.Tests` project).
+
 #### Application Layer (Use Cases)
 Organize by feature/capability, not by technical layer:
 
 ```
-src/ProjectName.Application/
-├── Orders/
+src/ProjectName.Orders/
+├── DomainModels/
+│   ├── Order.cs
+│   └── OrderLine.cs
+├── Features/
 │   ├── CreateOrder/
-│   │   ├── CreateOrderCommand.cs          (Request model)
-│   │   ├── CreateOrderHandler.cs          (Handler/orchestrator)
-│   │   ├── CreateOrderValidator.cs        (Input validation)
-│   │   ├── CreateOrderResult.cs           (Response DTO)
-│   │   └── CreateOrderHandler.Tests.cs    (Unit tests)
+│   │   ├── CreateOrderCommand.cs
+│   │   ├── CreateOrderCommandHandler.cs
+│   │   └── CreateOrderResult.cs
 │   ├── GetOrderById/
 │   │   ├── GetOrderByIdQuery.cs
-│   │   ├── GetOrderByIdHandler.cs
-│   │   ├── OrderDetailDto.cs
-│   │   └── GetOrderByIdHandler.Tests.cs
-│   ├── CancelOrder/
-│   │   ├── CancelOrderCommand.cs
-│   │   ├── CancelOrderHandler.cs
-│   │   └── CancelOrderHandler.Tests.cs
-│   └── _Shared/                           (Slice-specific shared code)
-│       ├── IOrderRepository.cs
-│       └── OrderLineDto.cs
-├── Customers/
-│   ├── RegisterCustomer/
-│   ├── UpdateCustomerProfile/
-│   └── GetCustomerHistory/
-└── _Common/                               (Cross-slice shared abstractions)
-    ├── IUnitOfWork.cs
-    ├── IClock.cs
-    └── DomainException.cs
-```
+│   │   ├── GetOrderByIdQueryHandler.cs
+│   │   └── OrderDetailDto.cs
+│   └── CancelOrder/
+│       ├── CancelOrderCommand.cs
+│       └── CancelOrderCommandHandler.cs
+├── IOrderRepository.cs                    (module-root, not in Features/)
+├── Observability/
+│   └── OrderMetrics.cs
+└── OrdersModuleRegistration.cs
 
-#### Domain Layer
-May be organized by aggregate or subdomain (DDD-style), but handlers reference domain via interfaces:
-
-```
-src/ProjectName.Domain/
-├── Orders/
-│   ├── Order.cs
-│   ├── OrderLine.cs
-│   ├── OrderStatus.cs
-│   └── IOrderRepository.cs
-├── Customers/
-│   ├── Customer.cs
-│   └── ICustomerRepository.cs
-└── Shared/
-    ├── Entity.cs
-    └── ValueObject.cs
-```
-
-#### Infrastructure/Adapters Layer
-Implement repository contracts per aggregate, not per slice (repositories are shared infrastructure):
-
-```
-src/ProjectName.Infrastructure/
-├── Persistence/
-│   ├── OrderRepository.cs
-│   ├── CustomerRepository.cs
-│   └── DatabaseContext.cs
-├── Messaging/
-│   └── ServiceBusPublisher.cs
-└── External/
-    └── PaymentGatewayAdapter.cs
-```
-
-#### HTTP/Interface Layer
-Endpoints map directly to slices:
-
-```
-src/ProjectName.Api/
-├── Endpoints/
-│   ├── OrderEndpoints.cs                  (All order-related endpoints)
-│   ├── CustomerEndpoints.cs
-│   └── HealthEndpoints.cs
-├── Middleware/
-│   └── ExceptionHandlerMiddleware.cs
-└── Program.cs
+src/ProjectName.Orders.Tests/
+├── CreateOrder/
+│   └── CreateOrderCommandHandlerTests.cs
+├── GetOrderById/
+│   └── GetOrderByIdQueryHandlerTests.cs
+└── CancelOrder/
+    └── CancelOrderCommandHandlerTests.cs
 ```
 
 ### Implementation Guidelines
@@ -264,38 +219,51 @@ public static class OrderEndpoints
 ```
 
 #### 5. Testing Slices
-Each slice has co-located tests:
+Tests live in a dedicated `.Tests` project that mirrors the feature structure of the module (see ADR 0009). Use **xUnit**, **Moq**, and **Bogus**:
 
 ```csharp
-namespace ProjectName.Application.Orders.CreateOrder;
+namespace ProjectName.Orders.Tests.CreateOrder;
 
-public sealed class CreateOrderHandlerTests
+public sealed class CreateOrderCommandHandlerTests
 {
+    private readonly Mock<IOrderRepository> _mockOrderRepo;
+    private readonly Mock<ICustomerRepository> _mockCustomerRepo;
+    private readonly Mock<IClock> _mockClock;
+    private readonly CreateOrderCommandHandler _handler;
+
+    public CreateOrderCommandHandlerTests()
+    {
+        _mockOrderRepo = new Mock<IOrderRepository>();
+        _mockCustomerRepo = new Mock<ICustomerRepository>();
+        _mockClock = new Mock<IClock>();
+        _handler = new CreateOrderCommandHandler(
+            _mockOrderRepo.Object,
+            _mockCustomerRepo.Object,
+            _mockClock.Object,
+            NullLogger<CreateOrderCommandHandler>.Instance);
+    }
+
     [Fact]
     public async Task Handle_ShouldCreateOrder_WhenValidCommand()
     {
         // Arrange
         var customerId = Guid.NewGuid();
-        var orderRepo = Substitute.For<IOrderRepository>();
-        var customerRepo = Substitute.For<ICustomerRepository>();
-        customerRepo.GetByIdAsync(customerId, Arg.Any<CancellationToken>())
-            .Returns(new Customer(customerId, "John Doe"));
-        var clock = Substitute.For<IClock>();
-        clock.UtcNow.Returns(DateTimeOffset.UtcNow);
+        _mockCustomerRepo.Setup(x => x.GetByIdAsync(customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Customer(customerId, "John Doe"));
+        _mockClock.Setup(x => x.UtcNow).Returns(DateTimeOffset.UtcNow);
 
-        var handler = new CreateOrderHandler(orderRepo, customerRepo, clock, NullLogger<CreateOrderHandler>.Instance);
         var command = new CreateOrderCommand(customerId, new[]
         {
             new OrderLineDto(Guid.NewGuid(), 2, 10.50m)
         });
 
         // Act
-        var result = await handler.Handle(command, CancellationToken.None);
+        var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Total.Should().Be(21.00m);
-        await orderRepo.Received(1).AddAsync(Arg.Any<Order>(), Arg.Any<CancellationToken>());
+        Assert.NotNull(result);
+        Assert.Equal(21.00m, result.Total);
+        _mockOrderRepo.Verify(x => x.AddAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -303,15 +271,8 @@ public sealed class CreateOrderHandlerTests
     {
         // Arrange
         var customerId = Guid.NewGuid();
-        var customerRepo = Substitute.For<ICustomerRepository>();
-        customerRepo.GetByIdAsync(customerId, Arg.Any<CancellationToken>())
-            .Returns((Customer?)null);
-
-        var handler = new CreateOrderHandler(
-            Substitute.For<IOrderRepository>(),
-            customerRepo,
-            Substitute.For<IClock>(),
-            NullLogger<CreateOrderHandler>.Instance);
+        _mockCustomerRepo.Setup(x => x.GetByIdAsync(customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Customer?)null);
 
         var command = new CreateOrderCommand(customerId, new[]
         {
@@ -319,9 +280,7 @@ public sealed class CreateOrderHandlerTests
         });
 
         // Act & Assert
-        await handler.Invoking(h => h.Handle(command, CancellationToken.None))
-            .Should().ThrowAsync<NotFoundException>()
-            .WithMessage($"Customer {customerId} not found");
+        await Assert.ThrowsAsync<NotFoundException>(() => _handler.Handle(command, CancellationToken.None));
     }
 }
 ```
@@ -389,17 +348,20 @@ Use mediator only if you need pipeline behaviors (logging, validation, transacti
 - **ADR 0002 (Modular Monolith)**: Vertical slices can be organized into modules (bounded contexts) at a higher level.
 - **ADR 0004 (CQRS)**: Vertical slices naturally align with command/query handlers.
 - **ADR 0005 (Minimal APIs)**: Thin endpoint mapping delegates to slice handlers.
+- **ADR 0009 (Feature Slices Module Structure)**: For modular-monolith projects, ADR 0009 **supersedes** the physical project layout described in this ADR. ADR 0009 defines the authoritative folder structure within a module, including `Features/`, `DomainModels/`, `Observability/`, `Services/`, and the handler naming convention (`{Feature}CommandHandler` / `{Feature}QueryHandler`). Tests are in a **separate** `.Tests` project, not co-located.
 
 ## Examples
 
 ### Complete Slice: UpdateCustomerProfile
 
 ```
-src/ProjectName.Application/Customers/UpdateCustomerProfile/
+src/ProjectName.Customers/Features/UpdateCustomerProfile/
 ├── UpdateCustomerProfileCommand.cs
-├── UpdateCustomerProfileHandler.cs
-├── UpdateCustomerProfileValidator.cs
-└── UpdateCustomerProfileHandler.Tests.cs
+├── UpdateCustomerProfileCommandHandler.cs
+└── UpdateCustomerProfileValidator.cs
+
+src/ProjectName.Customers.Tests/UpdateCustomerProfile/
+└── UpdateCustomerProfileCommandHandlerTests.cs
 ```
 
 **UpdateCustomerProfileCommand.cs:**
@@ -418,12 +380,12 @@ public sealed record UpdateCustomerProfileCommand(
 ```csharp
 namespace ProjectName.Application.Customers.UpdateCustomerProfile;
 
-public sealed class UpdateCustomerProfileHandler : ICommandHandler<UpdateCustomerProfileCommand>
+public sealed class UpdateCustomerProfileCommandHandler : ICommandHandler<UpdateCustomerProfileCommand>
 {
     private readonly ICustomerRepository _customers;
-    private readonly ILogger<UpdateCustomerProfileHandler> _logger;
+    private readonly ILogger<UpdateCustomerProfileCommandHandler> _logger;
 
-    public UpdateCustomerProfileHandler(ICustomerRepository customers, ILogger<UpdateCustomerProfileHandler> logger)
+    public UpdateCustomerProfileCommandHandler(ICustomerRepository customers, ILogger<UpdateCustomerProfileCommandHandler> logger)
         => (_customers, _logger) = (customers, logger);
 
     public async Task Handle(UpdateCustomerProfileCommand command, CancellationToken ct)
