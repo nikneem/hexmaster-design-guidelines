@@ -55,17 +55,17 @@ Each feature namespace contains:
 
 ### 3. Data Transfer Objects in the Abstractions Project
 
-All types that cross the module boundary — including API request payloads and response envelopes — are placed in the `Dtos` namespace of the Abstractions project:
+All types that cross the module boundary — including API request payloads and response envelopes — are placed in the `DataTransferObjects` namespace of the Abstractions project:
 
 ```
-Namespace.XYZ.{ModuleName}.Abstractions.Dtos
+Namespace.XYZ.{ModuleName}.Abstractions.DataTransferObjects
 ```
 
 Examples:
-- `Namespace.XYZ.Orders.Abstractions.Dtos.CreateOrderRequest`
-- `Namespace.XYZ.Orders.Abstractions.Dtos.OrderDto`
+- `Namespace.XYZ.Orders.Abstractions.DataTransferObjects.CreateOrderRequest`
+- `Namespace.XYZ.Orders.Abstractions.DataTransferObjects.OrderDto`
 
-> **Note**: Some projects use `DataTransferObjects` as the folder/namespace name; `Dtos` is preferred for new projects. Both are acceptable — be consistent within a module.
+> **Note**: Some legacy projects use `Dtos` as the folder/namespace name; `DataTransferObjects` is the standard for new projects.
 
 **Rules for DTOs:**
 
@@ -114,7 +114,7 @@ src/
     Services/                           ← Domain/application services
     OrdersModuleRegistration.cs
   Namespace.XYZ.Orders.Abstractions/
-    Dtos/
+    DataTransferObjects/
       CreateOrderRequest.cs             (API payload — received from client)
       OrderDto.cs                       (API response — returned to client)
     Services/
@@ -166,7 +166,7 @@ public sealed class CreateOrderCommandHandler : ICommandHandler<CreateOrderComma
 #### DTO in Abstractions project
 
 ```csharp
-namespace Namespace.XYZ.Orders.Abstractions.Dtos;
+namespace Namespace.XYZ.Orders.Abstractions.DataTransferObjects;
 
 public sealed record CreateOrderRequest(Guid CustomerId, IReadOnlyList<OrderLineRequest> Lines);
 public sealed record OrderLineRequest(Guid ProductId, int Quantity, decimal UnitPrice);
@@ -249,9 +249,9 @@ public static class OrdersModuleRegistration
 {
     public static IServiceCollection AddOrdersModule(this IServiceCollection services)
     {
-        services.AddScoped<ICommandHandler<CreateOrderCommand, CreateOrderResult>, CreateOrderHandler>();
-        services.AddScoped<ICommandHandler<DeleteOrderCommand>, DeleteOrderHandler>();
-        services.AddScoped<IQueryHandler<GetOrderByIdQuery, OrderDto?>, GetOrderByIdHandler>();
+        services.AddScoped<ICommandHandler<CreateOrderCommand, CreateOrderResult>, CreateOrderCommandHandler>();
+        services.AddScoped<ICommandHandler<DeleteOrderCommand>, DeleteOrderCommandHandler>();
+        services.AddScoped<IQueryHandler<GetOrderByIdQuery, OrderDto?>, GetOrderByIdQueryHandler>();
         // Register infrastructure adapters (repositories, etc.)
         return services;
     }
@@ -266,7 +266,7 @@ The host project calls `services.AddOrdersModule()` in `Program.cs`.
 
 1. **Clear, predictable structure**: Any developer can locate the handler for a feature by navigating `{Module}/Features/{FeatureName}/{FeatureName}CommandHandler.cs`.
 2. **Clean module boundary**: Abstractions project defines the module's public API; internal types (commands, queries, repository interfaces) stay private.
-3. **DTO discipline**: Centralizing DTOs in `Abstractions/Dtos` prevents payload types from leaking into domain or handler namespaces.
+3. **DTO discipline**: Centralizing DTOs in `Abstractions/DataTransferObjects` prevents payload types from leaking into domain or handler namespaces.
 4. **Thin endpoints**: Endpoint lambdas only map DTOs to commands/queries; no business logic.
 5. **Testability**: Handlers are isolated from HTTP concerns and can be unit tested with simple mocks (xUnit + Moq + Bogus).
 6. **Composability**: New features are new slice namespaces; no existing files are modified.
@@ -274,7 +274,7 @@ The host project calls `services.AddOrdersModule()` in `Program.cs`.
 
 ### Negative
 
-1. **Namespace verbosity**: Fully-qualified type names are long (e.g., `Namespace.XYZ.Orders.Features.CreateOrder.CreateOrderHandler`). Mitigate with `using` aliases and file-scoped namespaces.
+1. **Namespace verbosity**: Fully-qualified type names are long (e.g., `Namespace.XYZ.Orders.Features.CreateOrder.CreateOrderCommandHandler`). Mitigate with `using` aliases and file-scoped namespaces.
 2. **Boilerplate per feature**: Each feature requires at least two files (command/query + handler). Mitigate with project templates or scaffolding scripts.
 3. **Mapping overhead**: Each endpoint must explicitly map DTO → command and result → response. This is intentional (avoids coupling), but adds code. Mitigate with a thin mapping helper where the mapping is trivial.
 
