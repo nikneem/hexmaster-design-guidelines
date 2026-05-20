@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "hexmaster-design-guidelines": {
+      "type": "stdio",
+      "command": "hexmaster-codingguidelines-mcpserver",
+      "args": [],
+      "tools": ["*"]
+    }
+  }
+}

@@ -33,85 +33,44 @@ We REQUIRE organizing application code using **Vertical Slice Architecture** for
 
 ### Project Structure
 
+> **Note**: For modular-monolith projects, refer to **ADR 0009** for the authoritative physical project layout. The structure below illustrates the vertical-slice principle; actual folder names follow ADR 0009 conventions (`DomainModels/` not `Domain/`, `Features/` with `{Feature}CommandHandler` naming, tests in separate `.Tests` project).
+
 #### Application Layer (Use Cases)
 Organize by feature/capability, not by technical layer:
 
 ```
-src/ProjectName.Application/
-├── Orders/
+src/ProjectName.Orders/
+├── DomainModels/
+│   ├── Order.cs
+│   └── OrderLine.cs
+├── Features/
 │   ├── CreateOrder/
-│   │   ├── CreateOrderCommand.cs          (Request model)
-│   │   ├── CreateOrderHandler.cs          (Handler/orchestrator)
-│   │   ├── CreateOrderValidator.cs        (Input validation)
-│   │   ├── CreateOrderResult.cs           (Response DTO)
-│   │   └── CreateOrderHandler.Tests.cs    (Unit tests)
+│   │   ├── CreateOrderCommand.cs
+│   │   ├── CreateOrderCommandHandler.cs
+│   │   └── CreateOrderResult.cs
 │   ├── GetOrderById/
 │   │   ├── GetOrderByIdQuery.cs
-│   │   ├── GetOrderByIdHandler.cs
-│   │   ├── OrderDetailDto.cs
-│   │   └── GetOrderByIdHandler.Tests.cs
-│   ├── CancelOrder/
-│   │   ├── CancelOrderCommand.cs
-│   │   ├── CancelOrderHandler.cs
-│   │   └── CancelOrderHandler.Tests.cs
-│   └── _Shared/                           (Slice-specific shared code)
-│       ├── IOrderRepository.cs
-│       └── OrderLineDto.cs
-├── Customers/
-│   ├── RegisterCustomer/
-│   ├── UpdateCustomerProfile/
-│   └── GetCustomerHistory/
-└── _Common/                               (Cross-slice shared abstractions)
-    ├── IUnitOfWork.cs
-    ├── IClock.cs
-    └── DomainException.cs
-```
+│   │   └── GetOrderByIdQueryHandler.cs
+│   └── CancelOrder/
+│       ├── CancelOrderCommand.cs
+│       └── CancelOrderCommandHandler.cs
+├── IOrderRepository.cs                    (module-root, not in Features/)
+├── Observability/
+│   └── OrderMetrics.cs
+└── OrdersModuleRegistration.cs
 
-#### Domain Layer
-May be organized by aggregate or subdomain (DDD-style), but handlers reference domain via interfaces:
+src/ProjectName.Orders.Abstractions/
+└── DataTransferObjects/
+    ├── OrderDetailDto.cs                  (shared via Abstractions; not inside feature folder)
+    └── OrderLineDto.cs
 
-```
-src/ProjectName.Domain/
-├── Orders/
-│   ├── Order.cs
-│   ├── OrderLine.cs
-│   ├── OrderStatus.cs
-│   └── IOrderRepository.cs
-├── Customers/
-│   ├── Customer.cs
-│   └── ICustomerRepository.cs
-└── Shared/
-    ├── Entity.cs
-    └── ValueObject.cs
-```
-
-#### Infrastructure/Adapters Layer
-Implement repository contracts per aggregate, not per slice (repositories are shared infrastructure):
-
-```
-src/ProjectName.Infrastructure/
-├── Persistence/
-│   ├── OrderRepository.cs
-│   ├── CustomerRepository.cs
-│   └── DatabaseContext.cs
-├── Messaging/
-│   └── ServiceBusPublisher.cs
-└── External/
-    └── PaymentGatewayAdapter.cs
-```
-
-#### HTTP/Interface Layer
-Endpoints map directly to slices:
-
-```
-src/ProjectName.Api/
-├── Endpoints/
-│   ├── OrderEndpoints.cs                  (All order-related endpoints)
-│   ├── CustomerEndpoints.cs
-│   └── HealthEndpoints.cs
-├── Middleware/
-│   └── ExceptionHandlerMiddleware.cs
-└── Program.cs
+src/ProjectName.Orders.Tests/
+├── CreateOrder/
+│   └── CreateOrderCommandHandlerTests.cs
+├── GetOrderById/
+│   └── GetOrderByIdQueryHandlerTests.cs
+└── CancelOrder/
+    └── CancelOrderCommandHandlerTests.cs
 ```
 
 ### Implementation Guidelines
@@ -120,23 +79,23 @@ src/ProjectName.Api/
 Each slice has a dedicated handler:
 
 ```csharp
-namespace ProjectName.Application.Orders.CreateOrder;
+namespace ProjectName.Orders.Features.CreateOrder;
 
 public sealed record CreateOrderCommand(Guid CustomerId, IReadOnlyList<OrderLineDto> Lines);
 public sealed record CreateOrderResult(Guid OrderId, decimal Total, DateTimeOffset CreatedAt);
 
-public sealed class CreateOrderHandler : ICommandHandler<CreateOrderCommand, CreateOrderResult>
+public sealed class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand, CreateOrderResult>
 {
     private readonly IOrderRepository _orders;
     private readonly ICustomerRepository _customers;
     private readonly IClock _clock;
-    private readonly ILogger<CreateOrderHandler> _logger;
+    private readonly ILogger<CreateOrderCommandHandler> _logger;
 
-    public CreateOrderHandler(
+    public CreateOrderCommandHandler(
         IOrderRepository orders,
         ICustomerRepository customers,
         IClock clock,
-        ILogger<CreateOrderHandler> logger)
+        ILogger<CreateOrderCommandHandler> logger)
     {
         (_orders, _customers, _clock, _logger) = (orders, customers, clock, logger);
     }
@@ -168,40 +127,52 @@ public sealed class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Cre
 ```
 
 #### 2. Request/Response Models
-Use C# records for immutability and expressiveness:
+Use C# records for immutability and expressiveness.
+
+**DTOs belong in the `.Abstractions` project** (`DataTransferObjects/` folder). This keeps contracts consumable by other modules and the API project without creating coupling to the module implementation. Commands, queries, and result types that are internal to a single handler may live inside the feature slice.
 
 ```csharp
-namespace ProjectName.Application.Orders.CreateOrder;
+// ProjectName.Orders.Abstractions / DataTransferObjects /
+namespace ProjectName.Orders.Abstractions.DataTransferObjects;
 
-// Input DTO (from HTTP body)
 public sealed record OrderLineDto(Guid ProductId, int Quantity, decimal UnitPrice);
+public sealed record OrderDto(Guid OrderId, decimal Total, DateTimeOffset CreatedAt);
+```
 
-// Command (internal application model)
+```csharp
+// ProjectName.Orders / Features / CreateOrder /
+namespace ProjectName.Orders.Features.CreateOrder;
+
+// Command — internal to the module
 public sealed record CreateOrderCommand(Guid CustomerId, IReadOnlyList<OrderLineDto> Lines);
 
-// Result DTO (serialized to HTTP response)
+// Result — returned to the API layer; use an Abstractions DTO if shared across modules
 public sealed record CreateOrderResult(Guid OrderId, decimal Total, DateTimeOffset CreatedAt);
 ```
 
 #### 3. Validation
-Keep validation close to the slice; use FluentValidation or manual guards:
+Validation operates at two levels:
+
+**Level 1 — Endpoint filter (shallow):** Validates the incoming DTO for required fields, format, and range constraints. Catches malformed requests early and returns `400 Bad Request`. Can use FluentValidation or manual checks. Cannot enforce business invariants.
+
+**Level 2 — Domain model (authoritative):** The handler creates or loads the domain model via a factory (`Order.Create(...)`) or a behavior method (`customer.UpdateProfile(...)`). The domain model enforces invariants and throws `DomainException` on violations. This is the definitive validation layer.
 
 ```csharp
-namespace ProjectName.Application.Orders.CreateOrder;
-
-public sealed class CreateOrderValidator : AbstractValidator<CreateOrderCommand>
+// Level 1 — Endpoint filter (shallow: checks format and presence only)
+public sealed class CreateOrderRequestFilter : IEndpointFilter
 {
-    public CreateOrderValidator()
+    public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
-        RuleFor(x => x.CustomerId).NotEmpty();
-        RuleFor(x => x.Lines).NotEmpty().WithMessage("Order must have at least one line");
-        RuleForEach(x => x.Lines).ChildRules(line =>
-        {
-            line.RuleFor(l => l.Quantity).GreaterThan(0);
-            line.RuleFor(l => l.UnitPrice).GreaterThanOrEqualTo(0);
-        });
+        var req = context.GetArgument<CreateOrderRequest>(0);
+        if (req.Lines is null || req.Lines.Count == 0)
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+                { ["lines"] = ["At least one line is required."] });
+        return await next(context);
     }
 }
+
+// Level 2 — Domain model (business rule enforcement inside handler)
+var order = Order.Create(command.CustomerId, command.Lines); // throws DomainException if invariant violated
 ```
 
 #### 4. Endpoint Mapping
@@ -214,7 +185,7 @@ public static class OrderEndpoints
 {
     public static RouteGroupBuilder MapOrderEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/orders").WithTags("Orders");
+        var group = app.MapGroup("/orders").WithTags("Orders").WithOpenApi();
 
         group.MapPost("/", CreateOrder)
             .WithName("CreateOrder")
@@ -264,38 +235,51 @@ public static class OrderEndpoints
 ```
 
 #### 5. Testing Slices
-Each slice has co-located tests:
+Tests live in a dedicated `.Tests` project that mirrors the feature structure of the module (see ADR 0009). Use **xUnit**, **Moq**, and **Bogus**:
 
 ```csharp
-namespace ProjectName.Application.Orders.CreateOrder;
+namespace ProjectName.Orders.Tests.CreateOrder;
 
-public sealed class CreateOrderHandlerTests
+public sealed class CreateOrderCommandHandlerTests
 {
+    private readonly Mock<IOrderRepository> _mockOrderRepo;
+    private readonly Mock<ICustomerRepository> _mockCustomerRepo;
+    private readonly Mock<IClock> _mockClock;
+    private readonly CreateOrderCommandHandler _handler;
+
+    public CreateOrderCommandHandlerTests()
+    {
+        _mockOrderRepo = new Mock<IOrderRepository>();
+        _mockCustomerRepo = new Mock<ICustomerRepository>();
+        _mockClock = new Mock<IClock>();
+        _handler = new CreateOrderCommandHandler(
+            _mockOrderRepo.Object,
+            _mockCustomerRepo.Object,
+            _mockClock.Object,
+            NullLogger<CreateOrderCommandHandler>.Instance);
+    }
+
     [Fact]
     public async Task Handle_ShouldCreateOrder_WhenValidCommand()
     {
         // Arrange
         var customerId = Guid.NewGuid();
-        var orderRepo = Substitute.For<IOrderRepository>();
-        var customerRepo = Substitute.For<ICustomerRepository>();
-        customerRepo.GetByIdAsync(customerId, Arg.Any<CancellationToken>())
-            .Returns(new Customer(customerId, "John Doe"));
-        var clock = Substitute.For<IClock>();
-        clock.UtcNow.Returns(DateTimeOffset.UtcNow);
+        _mockCustomerRepo.Setup(x => x.GetByIdAsync(customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Customer(customerId, "John Doe"));
+        _mockClock.Setup(x => x.UtcNow).Returns(DateTimeOffset.UtcNow);
 
-        var handler = new CreateOrderHandler(orderRepo, customerRepo, clock, NullLogger<CreateOrderHandler>.Instance);
         var command = new CreateOrderCommand(customerId, new[]
         {
             new OrderLineDto(Guid.NewGuid(), 2, 10.50m)
         });
 
         // Act
-        var result = await handler.Handle(command, CancellationToken.None);
+        var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Total.Should().Be(21.00m);
-        await orderRepo.Received(1).AddAsync(Arg.Any<Order>(), Arg.Any<CancellationToken>());
+        Assert.NotNull(result);
+        Assert.Equal(21.00m, result.Total);
+        _mockOrderRepo.Verify(x => x.AddAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -303,15 +287,8 @@ public sealed class CreateOrderHandlerTests
     {
         // Arrange
         var customerId = Guid.NewGuid();
-        var customerRepo = Substitute.For<ICustomerRepository>();
-        customerRepo.GetByIdAsync(customerId, Arg.Any<CancellationToken>())
-            .Returns((Customer?)null);
-
-        var handler = new CreateOrderHandler(
-            Substitute.For<IOrderRepository>(),
-            customerRepo,
-            Substitute.For<IClock>(),
-            NullLogger<CreateOrderHandler>.Instance);
+        _mockCustomerRepo.Setup(x => x.GetByIdAsync(customerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Customer?)null);
 
         var command = new CreateOrderCommand(customerId, new[]
         {
@@ -319,9 +296,7 @@ public sealed class CreateOrderHandlerTests
         });
 
         // Act & Assert
-        await handler.Invoking(h => h.Handle(command, CancellationToken.None))
-            .Should().ThrowAsync<NotFoundException>()
-            .WithMessage($"Customer {customerId} not found");
+        await Assert.ThrowsAsync<NotFoundException>(() => _handler.Handle(command, CancellationToken.None));
     }
 }
 ```
@@ -329,15 +304,15 @@ public sealed class CreateOrderHandlerTests
 ### Shared Code Guidelines
 
 #### When to Share Across Slices
-- **Abstractions/Ports**: `IRepository<T>`, `IUnitOfWork`, `IClock`, `IEmailSender` → `_Common/` folder.
-- **Domain entities**: Shared across slices via domain layer (e.g., `Order`, `Customer`).
-- **DTOs used by multiple slices**: Place in `_Shared/` subfolder within the relevant module (e.g., `Orders/_Shared/OrderLineDto.cs`).
-- **Cross-cutting concerns**: Logging, exception handling, authorization → middleware or base classes in `_Common/`.
+- **Abstractions/Ports**: `IRepository<T>`, `IUnitOfWork`, `IClock`, `IEmailSender` → module root or `Core/` project.
+- **DTOs (Data Transfer Objects)**: All DTOs go in the `.Abstractions` project under `DataTransferObjects/`. This makes them available to API projects and other modules without coupling to the implementation.
+- **Domain entities**: Shared across slices via `DomainModels/` in the module project.
+- **Cross-cutting concerns**: Logging, exception handling, authorization → middleware or base classes in `Core/`.
 
 #### When NOT to Share
 - **Handler logic**: Each slice has its own handler; avoid "helper" handlers.
 - **Validation rules**: Slice-specific validation stays within the slice.
-- **Slice-specific DTOs**: `CreateOrderResult` is not shared; `GetOrderByIdQuery` defines its own `OrderDetailDto` if structure differs.
+- **Slice-specific result types**: `CreateOrderResult` used only by its handler can stay in the feature folder; promote to `Abstractions/DataTransferObjects/` once consumed by another module or the API project.
 
 ### Mediator Libraries (Optional)
 Vertical slices work with or without mediator libraries (e.g., MediatR):
@@ -345,7 +320,7 @@ Vertical slices work with or without mediator libraries (e.g., MediatR):
 **Without Mediator** (Preferred for simplicity):
 ```csharp
 // Direct DI registration per handler
-builder.Services.AddScoped<ICommandHandler<CreateOrderCommand, CreateOrderResult>, CreateOrderHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateOrderCommand, CreateOrderResult>, CreateOrderCommandHandler>();
 ```
 
 **With Mediator** (For larger projects with cross-cutting behaviors like logging, transactions):
@@ -373,14 +348,14 @@ Use mediator only if you need pipeline behaviors (logging, validation, transacti
 
 ### Negative
 1. **Initial learning curve**: Developers accustomed to layered architecture need adjustment.
-2. **Potential duplication**: Similar logic (e.g., validation patterns) may appear in multiple slices; refactor to `_Common/` when genuinely shared.
-3. **Namespace proliferation**: Deeply nested namespaces (e.g., `ProjectName.Application.Orders.CreateOrder`) can feel verbose.
+2. **Potential duplication**: Similar logic (e.g., validation patterns) may appear in multiple slices; refactor to `Core/` when genuinely shared.
+3. **Namespace proliferation**: Deeply nested namespaces (e.g., `ProjectName.Orders.Features.CreateOrder`) can feel verbose.
 4. **Tooling challenges**: Some IDEs default to layered folder structures; teams must configure templates.
-5. **Shared code ambiguity**: Developers may struggle to decide when code belongs in `_Common/` vs. slice-specific.
+5. **Shared code ambiguity**: Developers may struggle to decide when code belongs in `Core/` vs. slice-specific.
 
 ### Mitigation Strategies
 1. **Code reviews**: Ensure slices remain independent; flag unnecessary coupling.
-2. **Refactoring cadence**: Periodically review slices for duplicated logic; extract to `_Common/` when 3+ slices use the same pattern.
+2. **Refactoring cadence**: Periodically review slices for duplicated logic; extract to `Core/` when 3+ slices use the same pattern.
 3. **Templates/scaffolding**: Provide Visual Studio/Rider templates for creating new slices (command, handler, validator, tests).
 4. **Team training**: Conduct workshops on vertical slice principles and CQRS patterns.
 5. **Documentation**: Maintain examples in this ADR and the `/structures/` folder.
@@ -389,22 +364,25 @@ Use mediator only if you need pipeline behaviors (logging, validation, transacti
 - **ADR 0002 (Modular Monolith)**: Vertical slices can be organized into modules (bounded contexts) at a higher level.
 - **ADR 0004 (CQRS)**: Vertical slices naturally align with command/query handlers.
 - **ADR 0005 (Minimal APIs)**: Thin endpoint mapping delegates to slice handlers.
+- **ADR 0009 (Feature Slices Module Structure)**: For modular-monolith projects, ADR 0009 **supersedes** the physical project layout described in this ADR. ADR 0009 defines the authoritative folder structure within a module, including `Features/`, `DomainModels/`, `Observability/`, `Services/`, and the handler naming convention (`{Feature}CommandHandler` / `{Feature}QueryHandler`). Tests are in a **separate** `.Tests` project, not co-located.
 
 ## Examples
 
 ### Complete Slice: UpdateCustomerProfile
 
 ```
-src/ProjectName.Application/Customers/UpdateCustomerProfile/
+src/ProjectName.Customers/Features/UpdateCustomerProfile/
 ├── UpdateCustomerProfileCommand.cs
-├── UpdateCustomerProfileHandler.cs
-├── UpdateCustomerProfileValidator.cs
-└── UpdateCustomerProfileHandler.Tests.cs
+├── UpdateCustomerProfileCommandHandler.cs
+└── UpdateCustomerProfileRequestFilter.cs
+
+src/ProjectName.Customers.Tests/UpdateCustomerProfile/
+└── UpdateCustomerProfileCommandHandlerTests.cs
 ```
 
 **UpdateCustomerProfileCommand.cs:**
 ```csharp
-namespace ProjectName.Application.Customers.UpdateCustomerProfile;
+namespace ProjectName.Customers.Features.UpdateCustomerProfile;
 
 public sealed record UpdateCustomerProfileCommand(
     Guid CustomerId,
@@ -414,16 +392,16 @@ public sealed record UpdateCustomerProfileCommand(
     string? PhoneNumber);
 ```
 
-**UpdateCustomerProfileHandler.cs:**
+**UpdateCustomerProfileCommandHandler.cs:**
 ```csharp
-namespace ProjectName.Application.Customers.UpdateCustomerProfile;
+namespace ProjectName.Customers.Features.UpdateCustomerProfile;
 
-public sealed class UpdateCustomerProfileHandler : ICommandHandler<UpdateCustomerProfileCommand>
+public sealed class UpdateCustomerProfileCommandHandler : ICommandHandler<UpdateCustomerProfileCommand>
 {
     private readonly ICustomerRepository _customers;
-    private readonly ILogger<UpdateCustomerProfileHandler> _logger;
+    private readonly ILogger<UpdateCustomerProfileCommandHandler> _logger;
 
-    public UpdateCustomerProfileHandler(ICustomerRepository customers, ILogger<UpdateCustomerProfileHandler> logger)
+    public UpdateCustomerProfileCommandHandler(ICustomerRepository customers, ILogger<UpdateCustomerProfileCommandHandler> logger)
         => (_customers, _logger) = (customers, logger);
 
     public async Task Handle(UpdateCustomerProfileCommand command, CancellationToken ct)
@@ -431,6 +409,7 @@ public sealed class UpdateCustomerProfileHandler : ICommandHandler<UpdateCustome
         var customer = await _customers.GetByIdAsync(command.CustomerId, ct)
             ?? throw new NotFoundException($"Customer {command.CustomerId} not found");
 
+        // Domain model enforces business rules — throws DomainException on invariant violations
         customer.UpdateProfile(command.FirstName, command.LastName, command.Email, command.PhoneNumber);
 
         await _customers.UpdateAsync(customer, ct);
@@ -440,19 +419,28 @@ public sealed class UpdateCustomerProfileHandler : ICommandHandler<UpdateCustome
 }
 ```
 
-**UpdateCustomerProfileValidator.cs:**
+**UpdateCustomerProfileRequestFilter.cs** (shallow endpoint-level validation):
 ```csharp
-namespace ProjectName.Application.Customers.UpdateCustomerProfile;
+namespace ProjectName.Customers.Features.UpdateCustomerProfile;
 
-public sealed class UpdateCustomerProfileValidator : AbstractValidator<UpdateCustomerProfileCommand>
+public sealed class UpdateCustomerProfileRequestFilter : IEndpointFilter
 {
-    public UpdateCustomerProfileValidator()
+    public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
-        RuleFor(x => x.CustomerId).NotEmpty();
-        RuleFor(x => x.FirstName).NotEmpty().MaximumLength(50);
-        RuleFor(x => x.LastName).NotEmpty().MaximumLength(50);
-        RuleFor(x => x.Email).NotEmpty().EmailAddress();
-        RuleFor(x => x.PhoneNumber).Matches(@"^\+?[1-9]\d{1,14}$").When(x => !string.IsNullOrEmpty(x.PhoneNumber));
+        var req = context.GetArgument<UpdateCustomerProfileRequest>(0);
+        var errors = new Dictionary<string, string[]>();
+
+        if (string.IsNullOrWhiteSpace(req.FirstName))
+            errors["firstName"] = ["First name is required."];
+        if (string.IsNullOrWhiteSpace(req.LastName))
+            errors["lastName"] = ["Last name is required."];
+        if (string.IsNullOrWhiteSpace(req.Email))
+            errors["email"] = ["Email is required."];
+
+        if (errors.Count > 0)
+            return Results.ValidationProblem(errors);
+
+        return await next(context);
     }
 }
 ```

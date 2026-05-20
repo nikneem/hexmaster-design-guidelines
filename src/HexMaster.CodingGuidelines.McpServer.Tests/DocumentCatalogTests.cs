@@ -23,7 +23,7 @@ public class DocumentCatalogTests
     {
         var catalog = new FileSystemDocumentCatalog();
         var id = catalog.ListDocuments().First().Id;
-        var content = await catalog.GetContentAsync(id);
+        var content = await catalog.GetContentAsync(id, TestContext.Current.CancellationToken);
         Assert.False(string.IsNullOrWhiteSpace(content));
         Assert.Contains("#", content);
     }
@@ -84,7 +84,7 @@ public class DocumentCatalogTests
     {
         var catalog = new FileSystemDocumentCatalog();
         await Assert.ThrowsAsync<System.IO.FileNotFoundException>(
-            async () => await catalog.GetContentAsync("non-existent-id"));
+            async () => await catalog.GetContentAsync("non-existent-id", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -113,9 +113,9 @@ public class DocumentCatalogTests
     [Fact]
     public void DocumentInfo_RecordEquality_Works()
     {
-        var doc1 = new DocumentInfo("test-id", "Test Title", "category", "path/to/file.md", Array.Empty<string>());
-        var doc2 = new DocumentInfo("test-id", "Test Title", "category", "path/to/file.md", Array.Empty<string>());
-        var doc3 = new DocumentInfo("other-id", "Test Title", "category", "path/to/file.md", Array.Empty<string>());
+        var doc1 = new DocumentInfo("test-id", "Test Title", string.Empty, "category", "path/to/file.md", Array.Empty<string>());
+        var doc2 = new DocumentInfo("test-id", "Test Title", string.Empty, "category", "path/to/file.md", Array.Empty<string>());
+        var doc3 = new DocumentInfo("other-id", "Test Title", string.Empty, "category", "path/to/file.md", Array.Empty<string>());
 
         Assert.Equal(doc1, doc2);
         Assert.NotEqual(doc1, doc3);
@@ -124,7 +124,7 @@ public class DocumentCatalogTests
     [Fact]
     public void DocumentInfo_ToString_ContainsId()
     {
-        var doc = new DocumentInfo("test-id", "Test Title", "category", "path/to/file.md", new[] { "tag-a" });
+        var doc = new DocumentInfo("test-id", "Test Title", string.Empty, "category", "path/to/file.md", new[] { "tag-a" });
         var str = doc.ToString();
         Assert.Contains("test-id", str);
     }
@@ -137,7 +137,7 @@ public class DocumentCatalogTests
 
         foreach (var doc in docs)
         {
-            var content = await catalog.GetContentAsync(doc.Id);
+            var content = await catalog.GetContentAsync(doc.Id, TestContext.Current.CancellationToken);
             Assert.False(string.IsNullOrWhiteSpace(content));
         }
     }

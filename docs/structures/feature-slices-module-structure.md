@@ -32,32 +32,65 @@ Namespace.XYZ.{ModuleName}.Features.{FeatureName}
 
 ```
 src/
-  Namespace.XYZ.Orders/
-    Namespace.XYZ.Orders/                         ← Module implementation project
-      Domain/
+  {ModuleName}/                                       ← Short module folder name (e.g., Orders, Conferences)
+    Namespace.XYZ.Orders/                             ← Module implementation project
+      DomainModels/
         Order.cs
         OrderLine.cs
-        IOrderRepository.cs
+      IOrderRepository.cs                             ← Repository port — lives in module project root
       Features/
         CreateOrder/
           CreateOrderCommand.cs
-          CreateOrderHandler.cs
+          CreateOrderCommandHandler.cs
         DeleteOrder/
           DeleteOrderCommand.cs
-          DeleteOrderHandler.cs
+          DeleteOrderCommandHandler.cs
         GetOrderById/
           GetOrderByIdQuery.cs
-          GetOrderByIdHandler.cs
-      OrdersModuleRegistration.cs                 ← DI extension method
+          GetOrderByIdQueryHandler.cs
+      Observability/
+        OrderMetrics.cs                               ← OpenTelemetry metrics, ActivitySource
+      Services/                                       ← Application/domain services
+      Extensions/                                     ← DI helper extensions
+      OrdersModuleRegistration.cs                     ← DI extension method
       Namespace.XYZ.Orders.csproj
 
-    Namespace.XYZ.Orders.Abstractions/            ← Module Abstractions project
+    Namespace.XYZ.Orders.Abstractions/                ← Module Abstractions project
       DataTransferObjects/
         CreateOrderRequest.cs
         OrderDto.cs
         OrderLineRequest.cs
-      IOrderService.cs                            ← Optional: cross-module service port
+      Services/
+        IOrderService.cs                              ← Cross-module service port (if needed)
       Namespace.XYZ.Orders.Abstractions.csproj
+
+    Namespace.XYZ.Orders.Api/                         ← Module API project (one per module)
+      Endpoints/
+        OrderEndpoints.cs
+      Authorization/                                  ← Auth policies (if needed)
+      BackgroundServices/                             ← Hosted services (if needed)
+      Program.cs
+      appsettings.json
+      Namespace.XYZ.Orders.Api.csproj
+
+    Namespace.XYZ.Orders.Data.Postgres/               ← Persistence adapter (optional)
+      OrderRepository.cs
+      OrderDbContext.cs
+      Migrations/
+      Namespace.XYZ.Orders.Data.Postgres.csproj
+
+    Namespace.XYZ.Orders.Tests/                       ← Test project (mirrors feature structure)
+      CreateOrder/
+        CreateOrderCommandHandlerTests.cs
+      DeleteOrder/
+        DeleteOrderCommandHandlerTests.cs
+      GetOrderById/
+        GetOrderByIdQueryHandlerTests.cs
+      DomainModels/
+        OrderTests.cs
+      Helpers/                                        ← Shared test helpers
+      Factories/                                      ← Test object factories (Bogus-based)
+      Namespace.XYZ.Orders.Tests.csproj
 ```
 
 ---
@@ -108,16 +141,16 @@ public sealed record CreateOrderCommand(Guid CustomerId, IReadOnlyList<OrderLine
 public sealed record CreateOrderResult(Guid OrderId, decimal Total, DateTimeOffset CreatedAt);
 ```
 
-**`Features/CreateOrder/CreateOrderHandler.cs`**
+**`Features/CreateOrder/CreateOrderCommandHandler.cs`**
 ```csharp
 namespace Namespace.XYZ.Orders.Features.CreateOrder;
 
-public sealed class CreateOrderHandler : ICommandHandler<CreateOrderCommand, CreateOrderResult>
+public sealed class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand, CreateOrderResult>
 {
     private readonly IOrderRepository _orders;
-    private readonly ILogger<CreateOrderHandler> _logger;
+    private readonly ILogger<CreateOrderCommandHandler> _logger;
 
-    public CreateOrderHandler(IOrderRepository orders, ILogger<CreateOrderHandler> logger)
+    public CreateOrderCommandHandler(IOrderRepository orders, ILogger<CreateOrderCommandHandler> logger)
         => (_orders, _logger) = (orders, logger);
 
     public async Task<CreateOrderResult> Handle(CreateOrderCommand command, CancellationToken ct)
@@ -144,16 +177,16 @@ namespace Namespace.XYZ.Orders.Features.DeleteOrder;
 public sealed record DeleteOrderCommand(Guid OrderId);
 ```
 
-**`Features/DeleteOrder/DeleteOrderHandler.cs`**
+**`Features/DeleteOrder/DeleteOrderCommandHandler.cs`**
 ```csharp
 namespace Namespace.XYZ.Orders.Features.DeleteOrder;
 
-public sealed class DeleteOrderHandler : ICommandHandler<DeleteOrderCommand>
+public sealed class DeleteOrderCommandHandler : ICommandHandler<DeleteOrderCommand>
 {
     private readonly IOrderRepository _orders;
-    private readonly ILogger<DeleteOrderHandler> _logger;
+    private readonly ILogger<DeleteOrderCommandHandler> _logger;
 
-    public DeleteOrderHandler(IOrderRepository orders, ILogger<DeleteOrderHandler> logger)
+    public DeleteOrderCommandHandler(IOrderRepository orders, ILogger<DeleteOrderCommandHandler> logger)
         => (_orders, _logger) = (orders, logger);
 
     public async Task Handle(DeleteOrderCommand command, CancellationToken ct)
@@ -180,17 +213,17 @@ using Namespace.XYZ.Orders.Abstractions.DataTransferObjects;
 public sealed record GetOrderByIdQuery(Guid OrderId);
 ```
 
-**`Features/GetOrderById/GetOrderByIdHandler.cs`**
+**`Features/GetOrderById/GetOrderByIdQueryHandler.cs`**
 ```csharp
 namespace Namespace.XYZ.Orders.Features.GetOrderById;
 
 using Namespace.XYZ.Orders.Abstractions.DataTransferObjects;
 
-public sealed class GetOrderByIdHandler : IQueryHandler<GetOrderByIdQuery, OrderDto?>
+public sealed class GetOrderByIdQueryHandler : IQueryHandler<GetOrderByIdQuery, OrderDto?>
 {
     private readonly IOrderRepository _orders;
 
-    public GetOrderByIdHandler(IOrderRepository orders) => _orders = orders;
+    public GetOrderByIdQueryHandler(IOrderRepository orders) => _orders = orders;
 
     public async Task<OrderDto?> Handle(GetOrderByIdQuery query, CancellationToken ct)
     {
@@ -228,9 +261,9 @@ public static class OrdersModuleRegistration
     public static IServiceCollection AddOrdersModule(this IServiceCollection services)
     {
         // Feature handlers
-        services.AddScoped<ICommandHandler<CreateOrderCommand, CreateOrderResult>, CreateOrderHandler>();
-        services.AddScoped<ICommandHandler<DeleteOrderCommand>, DeleteOrderHandler>();
-        services.AddScoped<IQueryHandler<GetOrderByIdQuery, OrderDto?>, GetOrderByIdHandler>();
+        services.AddScoped<ICommandHandler<CreateOrderCommand, CreateOrderResult>, CreateOrderCommandHandler>();
+        services.AddScoped<ICommandHandler<DeleteOrderCommand>, DeleteOrderCommandHandler>();
+        services.AddScoped<IQueryHandler<GetOrderByIdQuery, OrderDto?>, GetOrderByIdQueryHandler>();
 
         // Infrastructure (register repository adapters here or in a dedicated extension)
         return services;
@@ -242,11 +275,11 @@ public static class OrdersModuleRegistration
 
 ### API Host: Endpoint Mapping
 
-The host project references only the Abstractions project for DTOs and the module project (or a shared Core project) for handler interfaces. Endpoint lambdas map DTO → command/query:
+Each module has its own API project (`Namespace.XYZ.Orders.Api`). The endpoint class references the module's Abstractions for DTOs and the module project (or Core) for handler interfaces:
 
-**`Endpoints/OrderEndpoints.cs`** (in the API host project)
+**`Endpoints/OrderEndpoints.cs`** (in the module's own API project)
 ```csharp
-namespace Namespace.XYZ.Api.Endpoints;
+namespace Namespace.XYZ.Orders.Api.Endpoints;
 
 using Namespace.XYZ.Orders.Abstractions.DataTransferObjects;
 using Namespace.XYZ.Orders.Features.CreateOrder;
@@ -312,17 +345,18 @@ public static class OrderEndpoints
 }
 ```
 
-**`Program.cs`** (host wiring)
+**`Program.cs`** (module API host wiring)
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults(); // Aspire service defaults
+
 builder.Services.AddOrdersModule();
-// ... other modules
 
 var app = builder.Build();
 
+app.MapDefaultEndpoints(); // /health, /alive
 app.MapOrderEndpoints();
-// ... other endpoint groups
 
 app.Run();
 ```
@@ -333,13 +367,18 @@ app.Run();
 
 | Artifact | Pattern | Example |
 |---|---|---|
+| Module folder | Short module name | `Orders/`, `Conferences/` |
 | Module implementation project | `Namespace.XYZ.{ModuleName}` | `HexMaster.Orders` |
 | Module abstractions project | `Namespace.XYZ.{ModuleName}.Abstractions` | `HexMaster.Orders.Abstractions` |
+| Module API project | `Namespace.XYZ.{ModuleName}.Api` | `HexMaster.Orders.Api` |
+| Module test project | `Namespace.XYZ.{ModuleName}.Tests` | `HexMaster.Orders.Tests` |
 | DTO namespace | `Namespace.XYZ.{ModuleName}.Abstractions.DataTransferObjects` | `HexMaster.Orders.Abstractions.DataTransferObjects` |
+| Repository interface | `I{Entity}Repository` at module project root | `IOrderRepository` |
 | Feature namespace | `Namespace.XYZ.{ModuleName}.Features.{FeatureName}` | `HexMaster.Orders.Features.CreateOrder` |
 | Command record | `{FeatureName}Command` | `CreateOrderCommand` |
 | Query record | `{FeatureName}Query` | `GetOrderByIdQuery` |
-| Handler class | `{FeatureName}Handler` | `CreateOrderHandler` |
+| Command handler class | `{FeatureName}CommandHandler` | `CreateOrderCommandHandler` |
+| Query handler class | `{FeatureName}QueryHandler` | `GetOrderByIdQueryHandler` |
 | API request DTO | `{FeatureName}Request` | `CreateOrderRequest` |
 | API response DTO | `{Entity}Dto` or `{FeatureName}Result` | `OrderDto`, `CreateOrderResult` |
 | Module registration method | `Add{ModuleName}Module` | `AddOrdersModule` |
@@ -374,45 +413,77 @@ app.Run();
 
 ## Testing
 
-Co-locate handler tests with the feature slice:
+Tests live in a **dedicated test project** (`Namespace.XYZ.Orders.Tests`), mirroring the feature structure of the module:
+
+```
+Namespace.XYZ.Orders.Tests/
+  CreateOrder/
+    CreateOrderCommandHandlerTests.cs
+  DeleteOrder/
+    DeleteOrderCommandHandlerTests.cs
+  DomainModels/
+    OrderTests.cs
+  Helpers/
+    TestMetricsFactory.cs
+  Factories/
+    OrderFaker.cs                      ← Bogus-based test data factories
+```
+
+Use **xUnit**, **Moq**, and **Bogus** for unit tests:
 
 ```csharp
-namespace Namespace.XYZ.Orders.Features.CreateOrder;
+namespace Namespace.XYZ.Orders.Tests.CreateOrder;
 
-public sealed class CreateOrderHandlerTests
+public sealed class CreateOrderCommandHandlerTests
 {
+    private readonly Mock<IOrderRepository> _mockRepository;
+    private readonly Mock<ILogger<CreateOrderCommandHandler>> _mockLogger;
+    private readonly CreateOrderCommandHandler _handler;
+    private readonly Faker _faker;
+
+    public CreateOrderCommandHandlerTests()
+    {
+        _mockRepository = new Mock<IOrderRepository>();
+        _mockLogger = new Mock<ILogger<CreateOrderCommandHandler>>();
+        _handler = new CreateOrderCommandHandler(_mockRepository.Object, _mockLogger.Object);
+        _faker = new Faker();
+    }
+
     [Fact]
     public async Task Handle_ShouldCreateOrder_WhenCommandIsValid()
     {
         // Arrange
-        var ordersRepo = Substitute.For<IOrderRepository>();
-        var handler = new CreateOrderHandler(ordersRepo, NullLogger<CreateOrderHandler>.Instance);
         var command = new CreateOrderCommand(
             Guid.NewGuid(),
             [new OrderLineDto(Guid.NewGuid(), 2, 10.00m)]);
 
+        _mockRepository.Setup(x => x.AddAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         // Act
-        var result = await handler.Handle(command, CancellationToken.None);
+        var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Total.Should().Be(20.00m);
-        await ordersRepo.Received(1).AddAsync(Arg.Any<Order>(), Arg.Any<CancellationToken>());
+        Assert.NotNull(result);
+        Assert.NotEqual(Guid.Empty, result.OrderId);
+        _mockRepository.Verify(x => x.AddAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Handle_ShouldThrowDomainException_WhenNoLines()
     {
         // Arrange
-        var handler = new CreateOrderHandler(
-            Substitute.For<IOrderRepository>(),
-            NullLogger<CreateOrderHandler>.Instance);
         var command = new CreateOrderCommand(Guid.NewGuid(), []);
 
         // Act & Assert
-        await handler.Invoking(h => h.Handle(command, CancellationToken.None))
-            .Should().ThrowAsync<DomainException>()
-            .WithMessage("*at least one line*");
+        await Assert.ThrowsAsync<DomainException>(() => _handler.Handle(command, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Handle_ShouldThrowArgumentNullException_WhenCommandIsNull()
+    {
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _handler.Handle(null!, CancellationToken.None));
     }
 }
 ```

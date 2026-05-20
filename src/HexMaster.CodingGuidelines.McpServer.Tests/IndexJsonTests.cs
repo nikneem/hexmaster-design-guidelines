@@ -27,6 +27,7 @@ public class IndexJsonTests
                     {
                         ""id"": ""test-doc"",
                         ""title"": ""Test Document"",
+                        ""description"": ""A document about testing and verification"",
                         ""category"": ""test"",
                         ""relativePath"": ""test/test-doc.md"",
                         ""tags"": [""testing"", ""sample""]
@@ -43,7 +44,51 @@ public class IndexJsonTests
             Assert.Single(docs);
             Assert.Equal("test-doc", docs[0].Id);
             Assert.Equal("Test Document", docs[0].Title);
+            Assert.Equal("A document about testing and verification", docs[0].Description);
             Assert.Contains("testing", docs[0].Tags);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void FileSystemCatalog_Search_MatchesDescription()
+    {
+        // Arrange
+        var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(tempDir);
+        Directory.CreateDirectory(Path.Combine(tempDir, "test"));
+
+        try
+        {
+            var indexPath = Path.Combine(tempDir, "index.json");
+            var indexContent = @"{
+                ""version"": ""1.0"",
+                ""generated"": ""2025-11-19T00:00:00Z"",
+                ""documents"": [
+                    {
+                        ""id"": ""test-doc"",
+                        ""title"": ""Some Document"",
+                        ""description"": ""Uniqueterm that appears only in the description"",
+                        ""category"": ""test"",
+                        ""relativePath"": ""test/test-doc.md"",
+                        ""tags"": [""testing""]
+                    }
+                ]
+            }";
+            File.WriteAllText(indexPath, indexContent);
+            File.WriteAllText(Path.Combine(tempDir, "test", "test-doc.md"), "# Some Document\n\nContent without the unique term.");
+
+            // Act
+            var catalog = new FileSystemDocumentCatalog(tempDir);
+            var results = catalog.Search("Uniqueterm");
+
+            // Assert
+            Assert.NotEmpty(results);
+            Assert.Equal("test-doc", results[0].Id);
         }
         finally
         {

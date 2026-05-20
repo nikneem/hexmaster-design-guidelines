@@ -49,7 +49,9 @@ Examples:
 
 Each feature namespace contains:
 - The **command or query** record.
-- The **handler** class that implements `ICommandHandler<TCommand, TResult>` or `IQueryHandler<TQuery, TResult>` (interfaces defined in the shared Core/Abstractions per ADR 0004).
+- The **handler** class that implements `ICommandHandler<TCommand, TResult>` or `IQueryHandler<TQuery, TResult>` (interfaces defined in the shared `Core/` project per ADR 0004).
+
+**Handler naming convention**: Use `{FeatureName}CommandHandler` for command handlers and `{FeatureName}QueryHandler` for query handlers. The shorter `{FeatureName}Handler` is also acceptable but the full suffix makes the handler role unambiguous.
 
 ### 3. Data Transfer Objects in the Abstractions Project
 
@@ -62,6 +64,8 @@ Namespace.XYZ.{ModuleName}.Abstractions.DataTransferObjects
 Examples:
 - `Namespace.XYZ.Orders.Abstractions.DataTransferObjects.CreateOrderRequest`
 - `Namespace.XYZ.Orders.Abstractions.DataTransferObjects.OrderDto`
+
+> **Note**: Some legacy projects use `Dtos` as the folder/namespace name; `DataTransferObjects` is the standard for new projects.
 
 **Rules for DTOs:**
 
@@ -91,21 +95,33 @@ This keeps handlers free of any HTTP or web-framework concerns.
 ```
 src/
   Namespace.XYZ.Orders/
+    DomainModels/
+      Order.cs
+      OrderLine.cs
+    IOrderRepository.cs                 ← Repository port — internal to the module
     Features/
       CreateOrder/
-        CreateOrderCommand.cs       (Command record)
-        CreateOrderHandler.cs       (ICommandHandler implementation)
+        CreateOrderCommand.cs           (Command record)
+        CreateOrderCommandHandler.cs    (ICommandHandler implementation)
       DeleteOrder/
         DeleteOrderCommand.cs
-        DeleteOrderHandler.cs
+        DeleteOrderCommandHandler.cs
       GetOrderById/
-        GetOrderByIdQuery.cs        (Query record)
-        GetOrderByIdHandler.cs      (IQueryHandler implementation)
+        GetOrderByIdQuery.cs            (Query record)
+        GetOrderByIdQueryHandler.cs     (IQueryHandler implementation)
+    Observability/
+      OrderMetrics.cs                   ← OpenTelemetry metrics (ActivitySource, counters)
+    Services/                           ← Domain/application services
+    OrdersModuleRegistration.cs
   Namespace.XYZ.Orders.Abstractions/
     DataTransferObjects/
-      CreateOrderRequest.cs         (API payload — received from client)
-      OrderDto.cs                   (API response — returned to client)
+      CreateOrderRequest.cs             (API payload — received from client)
+      OrderDto.cs                       (API response — returned to client)
+    Services/
+      IOrderService.cs                  ← Cross-module service port (if consumed externally)
 ```
+
+> **Repository interfaces** (`IOrderRepository`) belong in the **module implementation project** (alongside the domain logic that consumes them), not in the Abstractions project. The data adapter project references the module project to implement these internal ports. Only cross-module service contracts (`IOrderService`) belong in Abstractions.
 
 #### Command / Query records
 
@@ -123,12 +139,12 @@ public sealed record CreateOrderResult(Guid OrderId, decimal Total, DateTimeOffs
 ```csharp
 namespace Namespace.XYZ.Orders.Features.CreateOrder;
 
-public sealed class CreateOrderHandler : ICommandHandler<CreateOrderCommand, CreateOrderResult>
+public sealed class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand, CreateOrderResult>
 {
     private readonly IOrderRepository _orders;
-    private readonly ILogger<CreateOrderHandler> _logger;
+    private readonly ILogger<CreateOrderCommandHandler> _logger;
 
-    public CreateOrderHandler(IOrderRepository orders, ILogger<CreateOrderHandler> logger)
+    public CreateOrderCommandHandler(IOrderRepository orders, ILogger<CreateOrderCommandHandler> logger)
         => (_orders, _logger) = (orders, logger);
 
     public async Task<CreateOrderResult> Handle(CreateOrderCommand command, CancellationToken ct)
@@ -233,9 +249,9 @@ public static class OrdersModuleRegistration
 {
     public static IServiceCollection AddOrdersModule(this IServiceCollection services)
     {
-        services.AddScoped<ICommandHandler<CreateOrderCommand, CreateOrderResult>, CreateOrderHandler>();
-        services.AddScoped<ICommandHandler<DeleteOrderCommand>, DeleteOrderHandler>();
-        services.AddScoped<IQueryHandler<GetOrderByIdQuery, OrderDto?>, GetOrderByIdHandler>();
+        services.AddScoped<ICommandHandler<CreateOrderCommand, CreateOrderResult>, CreateOrderCommandHandler>();
+        services.AddScoped<ICommandHandler<DeleteOrderCommand>, DeleteOrderCommandHandler>();
+        services.AddScoped<IQueryHandler<GetOrderByIdQuery, OrderDto?>, GetOrderByIdQueryHandler>();
         // Register infrastructure adapters (repositories, etc.)
         return services;
     }
@@ -248,17 +264,17 @@ The host project calls `services.AddOrdersModule()` in `Program.cs`.
 
 ### Positive
 
-1. **Clear, predictable structure**: Any developer can locate the handler for a feature by navigating `{Module}/Features/{FeatureName}/{FeatureName}Handler.cs`.
-2. **Clean module boundary**: Abstractions project defines the module's public API; internal types (commands, queries) stay private.
+1. **Clear, predictable structure**: Any developer can locate the handler for a feature by navigating `{Module}/Features/{FeatureName}/{FeatureName}CommandHandler.cs`.
+2. **Clean module boundary**: Abstractions project defines the module's public API; internal types (commands, queries, repository interfaces) stay private.
 3. **DTO discipline**: Centralizing DTOs in `Abstractions/DataTransferObjects` prevents payload types from leaking into domain or handler namespaces.
 4. **Thin endpoints**: Endpoint lambdas only map DTOs to commands/queries; no business logic.
-5. **Testability**: Handlers are isolated from HTTP concerns and can be unit tested with simple fakes.
+5. **Testability**: Handlers are isolated from HTTP concerns and can be unit tested with simple mocks (xUnit + Moq + Bogus).
 6. **Composability**: New features are new slice namespaces; no existing files are modified.
 7. **Aligns with prior ADRs**: Natural extension of ADR 0002 (Modular Monolith), ADR 0004 (CQRS), ADR 0005 (Minimal APIs), and ADR 0007 (Vertical Slices).
 
 ### Negative
 
-1. **Namespace verbosity**: Fully-qualified type names are long (e.g., `Namespace.XYZ.Orders.Features.CreateOrder.CreateOrderHandler`). Mitigate with `using` aliases and file-scoped namespaces.
+1. **Namespace verbosity**: Fully-qualified type names are long (e.g., `Namespace.XYZ.Orders.Features.CreateOrder.CreateOrderCommandHandler`). Mitigate with `using` aliases and file-scoped namespaces.
 2. **Boilerplate per feature**: Each feature requires at least two files (command/query + handler). Mitigate with project templates or scaffolding scripts.
 3. **Mapping overhead**: Each endpoint must explicitly map DTO → command and result → response. This is intentional (avoids coupling), but adds code. Mitigate with a thin mapping helper where the mapping is trivial.
 

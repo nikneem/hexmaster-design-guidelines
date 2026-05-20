@@ -56,6 +56,7 @@ public sealed class GitHubDocumentCatalog : IDocumentCatalog, IAsyncDisposable
         foreach (var d in all)
         {
             if (d.Title.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                d.Description.Contains(q, StringComparison.OrdinalIgnoreCase) ||
                 d.Id.Contains(q, StringComparison.OrdinalIgnoreCase) ||
                 d.RelativePath.Contains(q, StringComparison.OrdinalIgnoreCase))
             {
@@ -112,6 +113,7 @@ public sealed class GitHubDocumentCatalog : IDocumentCatalog, IAsyncDisposable
                     .Select(d => new DocumentInfo(
                         d.Id,
                         d.Title,
+                        d.Description ?? string.Empty,
                         d.Category,
                         d.RelativePath,
                         (IReadOnlyList<string>)(d.Tags ?? new List<string>())))
@@ -168,7 +170,7 @@ public sealed class GitHubDocumentCatalog : IDocumentCatalog, IAsyncDisposable
             }
             var (frontTitle, tags) = ParseFrontMatterForTitleAndTags(raw);
             var finalTitle = frontTitle ?? title;
-            list.Add(new DocumentInfo(id, finalTitle, category, relative.Replace('/', System.IO.Path.DirectorySeparatorChar), tags));
+            list.Add(new DocumentInfo(id, finalTitle, string.Empty, category, relative.Replace('/', System.IO.Path.DirectorySeparatorChar), tags));
         }
         // Stable ordering
         list.Sort((a, b) => string.Compare(a.Category, b.Category, StringComparison.OrdinalIgnoreCase) switch
@@ -279,6 +281,7 @@ public sealed class GitHubDocumentCatalog : IDocumentCatalog, IAsyncDisposable
     {
         public string Id { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
         public string RelativePath { get; set; } = string.Empty;
         public List<string>? Tags { get; set; }

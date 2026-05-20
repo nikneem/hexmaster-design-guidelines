@@ -16,7 +16,7 @@ We RECOMMEND using Minimal APIs for all NEW ASP.NET API projects (HTTP APIs, RES
 
 - Minimal APIs are lightweight, more performant, and align with modern .NET idioms (top-level statements, DI-resolved lambdas).
 - They reduce indirection (no base controller class inheritance) and improve startup time.
-- OpenAPI/Swagger generation, validation, binding, filters, and authentication/authorization are fully supported as of .NET 10.
+- Native ASP.NET 10 OpenAPI generation is built-in: register with `builder.Services.AddOpenApi()`, expose the schema endpoint with `app.MapOpenApi()`, and use Scalar for the API UI (`app.MapScalarApiReference()` from `Scalar.AspNetCore`). Swagger/Swashbuckle is not required.
 
 ### Legacy projects
 Projects historically created as controller-based APIs are ALLOWED to remain as-is. No mandatory migration is required. Incremental conversion to Minimal APIs is encouraged if refactoring occurs, but stability and team familiarity take priority over forced rewrites.
@@ -32,7 +32,7 @@ In all other scenarios, default to Minimal APIs.
 - Group related endpoints using `RouteGroupBuilder` (`app.MapGroup("/orders")`).
 - Keep endpoint lambdas thin; delegate to handlers (see ADR 0004 CQRS recommendation).
 - Use C# records for request/response models.
-- Apply validation at the edge (validator middleware or manual checks before invoking handlers).
+- Apply **shallow validation** at the edge via endpoint filters or manual checks (required fields, format, range). Shallow validation catches malformed requests early and returns `400 Bad Request`. It cannot enforce business invariants — domain model validation (see ADR 0007) is authoritative.
 - Register endpoint filters (logging, telemetry, error handling) via `.AddEndpointFilter<T>()`.
 - Use `Results` static helper (`Results.Ok()`, `Results.NotFound()`, `Results.Accepted()`) for consistent HTTP responses.
 
@@ -41,10 +41,14 @@ In all other scenarios, default to Minimal APIs.
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<IOrderService, OrderService>();
+builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-var orders = app.MapGroup("/orders");
+app.MapOpenApi();
+app.MapScalarApiReference();
+
+var orders = app.MapGroup("/orders").WithTags("Orders").WithOpenApi();
 
 orders.MapPost("/", async (CreateOrderRequest req, ICommandHandler<CreateOrderCommand, CreateOrderResult> handler, CancellationToken ct) =>
 {
