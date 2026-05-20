@@ -53,11 +53,63 @@ Risk Mitigation:
 - Minimal single-project setups (rejected for web services with multiple integrations: insufficient observability/resilience).
 
 ## Implementation Notes
-- Create `YourSolution.AppHost` using Aspire template.
+
+### Project Structure
+Place all Aspire orchestration projects under `src/Aspire/`:
+
+```
+src/Aspire/
+  Company.Product.Aspire.AppHost/
+  Company.Product.Aspire.ServiceDefaults/
+```
+
+Each module's `.Api` project calls `builder.AddServiceDefaults()` (from ServiceDefaults) at startup before building the app:
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceDefaults(); // Registers telemetry, health checks, service discovery
+
+builder.Services.AddConferencesModule();
+// ...
+
+var app = builder.Build();
+
+app.MapDefaultEndpoints(); // Exposes /health, /alive endpoints
+app.MapConferencesEndpoints();
+
+app.Run();
+```
+
+The AppHost references all module API projects and any infrastructure resources (databases, message brokers, caches):
+
+```csharp
+var builder = DistributedApplication.CreateBuilder(args);
+
+var postgres = builder.AddPostgres("postgres");
+
+var conferencesDb = postgres.AddDatabase("conferencesdb");
+var profilesDb = postgres.AddDatabase("profilesdb");
+
+builder.AddProject<Projects.HexMaster_Attendr_Conferences_Api>("conferences-api")
+    .WithReference(conferencesDb)
+    .WaitFor(conferencesDb);
+
+builder.AddProject<Projects.HexMaster_Attendr_Profiles_Api>("profiles-api")
+    .WithReference(profilesDb)
+    .WaitFor(profilesDb);
+
+builder.Build().Run();
+```
+
+### Setup Steps
+- Create `Company.Product.Aspire.AppHost` using the Aspire template.
+- Create `Company.Product.Aspire.ServiceDefaults` (included in Aspire starter template).
 - Reference web projects from AppHost to apply service defaults.
-- Use generated environment variables for service endpoints.
+- Call `builder.AddServiceDefaults()` in every module API's `Program.cs`.
+- Use generated environment variables for service endpoints (no hardcoded URLs).
 - Enable OpenTelemetry exporters (OTLP / console) early for diagnostics.
-- Add health checks endpoints to each web service; surface aggregated view in dashboard.
+- Add health check endpoints to each web service; surface aggregated view in dashboard.
 - Tag Aspire integration commit messages with `feat: adopt aspire (ADR-0003)`.
 
 ## Evaluation Criteria
@@ -71,6 +123,4 @@ Review adoption annually or when significant Aspire version changes occur. Measu
 - Official Docs: https://docs.microsoft.com/dotnet/aspire
 - eShop reference app (Aspire sample)
 - ADR 0001 (.NET 10 baseline)
-
-## Status Rationale
-Marked Proposed pending validation in at least one multi-project ASP.NET solution. Upgrade to Accepted after initial integration demonstrates improved developer inner-loop productivity.
+- ADR 0002 (Modular Monolith structure — `src/Aspire/` folder location)
