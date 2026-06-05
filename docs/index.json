@@ -137,6 +137,21 @@
             ]
         },
         {
+            "id": "0010-user-identity-resolution",
+            "title": "ADR 0010: Resolve External Subject ID to Internal User ID at the API Boundary",
+            "description": "Mandates that the JWT SubjectId is resolved to an internal UserId (Guid) at the API boundary before any command or query is dispatched. All domain entities, events, and stored records must use UserId; SubjectId must never leak into the domain model. Enables identity provider portability.",
+            "category": "adrs",
+            "relativePath": "adrs/0010-user-identity-resolution.md",
+            "tags": [
+                "identity",
+                "authentication",
+                "adr",
+                "aspnet",
+                "security",
+                "users"
+            ]
+        },
+        {
             "id": "modular-solution-structure",
             "title": "Modular Solution Structure Design",
             "description": "Visual blueprint of a complete solution: App/, Aspire/, Core/, and per-domain module folders each containing module, Abstractions, Api, Data, and Tests projects. Includes a concrete named example and per-project responsibility descriptions.",
